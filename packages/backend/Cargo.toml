@@ -1,0 +1,27 @@
+[package]
+name = "certifi"
+version = "0.1.0"
+edition = "2021"
+authors = ["Toluwalase Adams <theonlytolu@gmail.com>"]
+description = "A decentralized application for verifying the integrity of academic records."
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+alloy = { version = "0.11.1", features = ["full"]}
+axum = "0.8.1"
+tokio = { version = "1.43.0", features = ["full"]}
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+env_logger = "0.11.6"
+dotenv = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+futures = "0.3"
+rand = "0.9"
+hex = "0.4"
+thiserror = "1.0.63"
+secp256k1 = "0.20"
+ethereum-types = "0.12"
+alloy-node-bindings = "0.2.1"
+simple_logger = "5.0.0"
