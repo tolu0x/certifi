@@ -62,5 +62,9 @@
   "packageManager": "yarn@3.2.3",
   "engines": {
     "node": ">=20.18.3"
+  },
+  "dependencies": {
+    "next-auth": "^4.24.11",
+    "zustand": "^5.0.4"
   }
 }

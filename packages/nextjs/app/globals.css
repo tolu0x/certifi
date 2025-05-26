@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.btn {
+  text-transform: none;
+  font-weight: normal;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+  @apply bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-300;
+  box-shadow: none;
+}
+
+.btn-outline {
+  @apply border-black text-black hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black;
+  box-shadow: none;
+}
+
+.card {
+  border-radius: 0.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.input, .select {
+  border-radius: 0.25rem;
+  border-width: 1px;
+  @apply border-gray-300 focus:border-black focus:ring-0 dark:border-gray-700 dark:focus:border-white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.form-control .label {
+  margin-bottom: 0.25rem;
+}
+
+.form-control .label-text {
+  font-weight: 500;
+}
+
+table.table {
+  border-collapse: collapse;
+}
+
+table.table thead tr {
+  border-bottom: 2px solid #000;
+  @apply dark:border-white;
+}
+
+table.table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  @apply dark:border-gray-700;
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.navbar {
+  @apply bg-white text-black dark:bg-black dark:text-white;
+  border-bottom: 1px solid #e0e0e0;
+  @apply dark:border-gray-800;
+}
+
+.alert {
+  border-radius: 0.25rem;
+}
+
+.alert-warning {
+  @apply bg-yellow-50 text-yellow-900 border-l-4 border-yellow-500 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-500;
+}
+
+/* Modal styling */
+.modal-box {
+  border-radius: 0.25rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
