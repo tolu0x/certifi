@@ -1,6 +1,9 @@
 .PHONY: build deploy generate-abis get-address account chain compile flatten fork format lint test verify
 
 DEPLOY_SCRIPT ?= script/Deploy.s.sol
+RPC_URL ?= http://localhost:8545/
+ETH_KEYSTORE_ACCOUNT=scaffold-eth-default
+
 
 # setup wallet for anvil
 setup-anvil-wallet:
@@ -13,7 +16,7 @@ chain: setup-anvil-wallet
 
 # Start a fork
 fork: setup-anvil-wallet
-	anvil --fork-url ${FORK_URL} --chain-id 31337
+	anvil --fork-url $(FORK_URL) --chain-id 31337
 
 # Deploy the contracts
 deploy:
