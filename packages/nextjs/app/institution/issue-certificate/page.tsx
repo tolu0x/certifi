@@ -3,15 +3,12 @@
 import { ChangeEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthSync } from "~~/hooks/useAuthSync";
-import { useAuthStore } from "~~/services/store/authStore";
+import { useSession } from "next-auth/react";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
 
 export default function IssueCertificatePage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
-  useAuthSync();
-
+  const { data: session, status } = useSession();
   const { issueCertificate, isIssuing } = useCertifiIssuer();
 
   const [formData, setFormData] = useState({
@@ -40,12 +37,13 @@ export default function IssueCertificatePage() {
     progress: 0,
   });
 
-  if (!isAuthenticated || user?.role !== "institution") {
-    router.push("/admin");
+  if (status === "unauthenticated" || session?.user?.role !== "institution") {
+    router.replace("/auth/institution");
     return null;
   }
 
-  if (!user.profileData?.isApproved) {
+  if (!session.user.profileData?.isApproved) {
+    console.log("unauthorized");
     router.push("/institution/dashboard");
     return null;
   }
@@ -85,7 +83,6 @@ export default function IssueCertificatePage() {
     setIsSubmitting(true);
     setFormError(null);
 
-    // Initialize upload status
     setUploadStatus({
       isUploading: true,
       step: certificateFile ? "file" : "metadata",
@@ -95,8 +92,8 @@ export default function IssueCertificatePage() {
     try {
       const mockRecipientAddress = `0x${Math.random().toString(36).substring(2, 10)}${"0".repeat(34)}`;
 
-      const institutionName = user?.name || "Demo Institution";
-      const institutionAddress = user?.address || "0x0000000000000000000000000000000000000000";
+      const institutionName = session.user.name || "Demo Institution";
+      const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
 
       if (certificateFile) {
         for (let i = 0; i <= 100; i += 10) {
@@ -487,7 +484,9 @@ export default function IssueCertificatePage() {
                   {previewMode ? (
                     <div className="p-8 border border-gray-200 dark:border-gray-800 rounded-lg text-center">
                       <div className="p-4 border-b border-gray-200 dark:border-gray-800 mb-6">
-                        <h1 className="text-3xl font-serif font-bold mb-2">{user?.name || "Institution Name"}</h1>
+                        <h1 className="text-3xl font-serif font-bold mb-2">
+                          {session.user.name || "Institution Name"}
+                        </h1>
                         <p className="text-lg">Certificate of Achievement</p>
                       </div>
 

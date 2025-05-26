@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthSync } from "~~/hooks/useAuthSync";
-import { useAuthStore } from "~~/services/store/authStore";
+import { useSession } from "next-auth/react";
+import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
 
 interface Certificate {
   id: string;
@@ -18,7 +18,7 @@ interface Certificate {
 
 export default function CertificatesPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { data: session, status } = useSession();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [filteredCertificates, setFilteredCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,13 +28,17 @@ export default function CertificatesPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useAuthSync();
-
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "institution") {
-      router.push("/admin");
+    if (status === "unauthenticated" || session?.user?.role !== "institution") {
+      router.push("/auth/institution");
+      return;
     }
-  }, [isAuthenticated, user, router]);
+
+    if (!session.user.profileData?.isApproved) {
+      router.push("/institution/dashboard");
+      return;
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     const mockCertificates: Certificate[] = [
@@ -124,8 +128,16 @@ export default function CertificatesPage() {
     setSelectedCertificate(null);
   };
 
-  if ((!isAuthenticated || user?.role !== "institution") && !isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated" || session?.user?.role !== "institution") {
+    return null;
   }
 
   return (
@@ -294,7 +306,7 @@ export default function CertificatesPage() {
 
               <div className="mb-8 p-8 border border-gray-200 dark:border-gray-800 rounded-lg text-center">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 mb-6">
-                  <h1 className="text-3xl font-serif font-bold mb-2">{user?.name || "Institution Name"}</h1>
+                  <h1 className="text-3xl font-serif font-bold mb-2">{session.user.name || "Institution Name"}</h1>
                   <p className="text-lg">Certificate of Achievement</p>
                 </div>
 

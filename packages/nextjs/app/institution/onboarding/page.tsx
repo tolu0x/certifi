@@ -19,7 +19,6 @@ export default function InstitutionOnboarding() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if not authenticated or not an institution
   if (!isWalletConnected || !user || user.role !== "institution") {
     router.push("/auth/institution");
     return null;
@@ -35,7 +34,6 @@ export default function InstitutionOnboarding() {
     setIsSubmitting(true);
 
     try {
-      // Update user profile with institution details
       updateUserProfile({
         name: formData.name,
         email: formData.contactEmail,
@@ -43,12 +41,11 @@ export default function InstitutionOnboarding() {
           website: formData.website,
           contactEmail: formData.contactEmail,
           institutionType: formData.institutionType,
-          isApproved: false, // New institutions start as unapproved
+          isApproved: true, // TODO: Change to false and write verification logic
         },
       });
 
-      // In a real app, you would send this data to your backend/smart contract
-      // For now, we'll just redirect to the dashboard
+      // TODO: send this data to backend
       router.push("/institution/dashboard");
     } catch (error) {
       console.error("Error submitting institution details:", error);

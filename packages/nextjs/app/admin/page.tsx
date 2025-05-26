@@ -3,26 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { verifyMessage } from "ethers";
+import { signIn, useSession } from "next-auth/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { useAuthSync } from "~~/hooks/useAuthSync";
-import { useAuthStore } from "~~/services/store/authStore";
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, isAuthenticated, login } = useAuthStore();
+  const { data: session, status } = useSession();
   const { address, isConnected } = useAccount();
-  const { data: signature, isPending: isSignLoading, signMessage } = useSignMessage();
+  const { signMessageAsync } = useSignMessage();
   const [authStep, setAuthStep] = useState<"connect" | "sign" | "verifying" | "complete">("connect");
   const [signError, setSignError] = useState<string | null>(null);
 
-  useAuthSync();
-
   useEffect(() => {
-    if (isAuthenticated && user?.role === "institution") {
+    if (status === "authenticated" && session?.user?.role === "institution") {
       router.push("/institution/dashboard");
     }
-  }, [isAuthenticated, user, router]);
+  }, [status, session, router]);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -32,46 +28,29 @@ export default function AdminPage() {
     }
   }, [isConnected, address]);
 
-  useEffect(() => {
-    if (signature && address && authStep === "verifying") {
-      // TODO: Verify signature on backend
-      const message = `Sign this message to authenticate with Certifi as an institution. Wallet address: ${address}`;
-
-      try {
-        const recoveredAddress = verifyMessage(message, signature);
-
-        if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
-          login(address, "institution", { isApproved: true });
-          setAuthStep("complete");
-
-          // Check if user has completed onboarding
-          const storedUser = localStorage.getItem(`certifi-auth-storage`);
-          const hasCompletedOnboarding = storedUser && JSON.parse(storedUser).state.user?.name;
-
-          if (hasCompletedOnboarding) {
-            router.push("/institution/dashboard");
-          } else {
-            router.push("/institution/onboarding");
-          }
-        } else {
-          setSignError("Signature verification failed. Please try again.");
-          setAuthStep("sign");
-        }
-      } catch (error) {
-        console.error("Verification error:", error);
-        setSignError("Error during verification. Please try again.");
-        setAuthStep("sign");
-      }
-    }
-  }, [signature, address, authStep, login, router]);
-
   const handleSignMessage = async () => {
     setSignError(null);
 
     try {
       setAuthStep("verifying");
       const message = `Sign this message to authenticate with Certifi as an institution. Wallet address: ${address}`;
-      signMessage({ message });
+      const signature = await signMessageAsync({ message });
+
+      const result = await signIn("web3", {
+        address,
+        signature,
+        message,
+        role: "institution",
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setSignError(result.error);
+        setAuthStep("sign");
+      } else {
+        setAuthStep("complete");
+        router.push("/institution/dashboard");
+      }
     } catch (error) {
       console.error("Signing error:", error);
       setSignError("Error during signing. Please try again.");
@@ -118,8 +97,8 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                <button onClick={handleSignMessage} disabled={isSignLoading} className="btn btn-primary w-full">
-                  {isSignLoading ? "Waiting for signature..." : "Sign Message"}
+                <button onClick={handleSignMessage} className="btn btn-primary w-full">
+                  Sign Message
                 </button>
 
                 {signError && (

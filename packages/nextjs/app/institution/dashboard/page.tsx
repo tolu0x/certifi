@@ -3,28 +3,58 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAccount, useDisconnect } from "wagmi";
-import { useAuthSync } from "~~/hooks/useAuthSync";
-import { useAuthStore } from "~~/services/store/authStore";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { useAccount, useDisconnect, useSignMessage } from "wagmi";
+import { UserRole } from "~~/types/auth";
 
 export default function InstitutionDashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { data: session, status } = useSession();
   const { address } = useAccount();
   const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
   const [statsData, setStatsData] = useState({
     issuedCertificates: 0,
     pendingApprovals: 0,
     activeStudents: 0,
   });
 
-  useAuthSync();
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/institution");
+    } else if (session?.user?.role !== "institution") {
+      router.push("/auth/institution");
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "institution") {
-      router.push("/admin");
-    }
-  }, [isAuthenticated, user, router]);
+    const handleWeb3SignIn = async () => {
+      if (address && !session) {
+        try {
+          const message = `Sign in to Certifi as an institution\n\nAddress: ${address}\n\nNonce: ${Math.random()}`;
+          const signature = await signMessageAsync({ message });
+
+          const result = await signIn("web3", {
+            address,
+            signature,
+            message,
+            role: "institution",
+            redirect: false,
+          });
+
+          if (result?.error) {
+            console.error("Web3 sign in error:", result.error);
+          } else {
+            console.log("Web3 sign in successful");
+          }
+        } catch (error) {
+          console.error("Web3 sign in error:", error);
+        }
+      }
+    };
+
+    handleWeb3SignIn();
+  }, [address, session, signMessageAsync]);
 
   useEffect(() => {
     setStatsData({
@@ -34,13 +64,13 @@ export default function InstitutionDashboard() {
     });
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     disconnect();
-    router.push("/admin");
+    router.push("/auth/institution");
   };
 
-  if (!isAuthenticated || user?.role !== "institution") {
+  if (status === "loading" || !session) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
@@ -63,9 +93,9 @@ export default function InstitutionDashboard() {
               <div className="dropdown dropdown-end">
                 <label tabIndex={0} className="cursor-pointer flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span className="font-bold">{user.name?.charAt(0) || "I"}</span>
+                    <span className="font-bold">{session.user.name?.charAt(0) || "I"}</span>
                   </div>
-                  <span className="font-medium hidden md:inline">{user.name || "Institution"}</span>
+                  <span className="font-medium hidden md:inline">{session.user.name || "Institution"}</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -127,7 +157,7 @@ export default function InstitutionDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {!user.profileData?.isApproved && (
+        {!session.user.profileData?.isApproved && (
           <div className="mb-8 p-4 border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20 rounded-lg">
             <div className="flex items-start gap-3">
               <svg
@@ -219,7 +249,7 @@ export default function InstitutionDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link
             href="/institution/issue-certificate"
-            className={`border border-gray-200 dark:border-gray-800 p-6 rounded-lg hover:border-black dark:hover:border-white transition duration-200 ${!user.profileData?.isApproved ? "opacity-50 pointer-events-none" : ""}`}
+            className={`border border-gray-200 dark:border-gray-800 p-6 rounded-lg hover:border-black dark:hover:border-white transition duration-200 ${!session.user.profileData?.isApproved ? "opacity-50 pointer-events-none" : ""}`}
           >
             <div className="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -252,7 +282,7 @@ export default function InstitutionDashboard() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Certificate History</h3>
+            <h3 className="text-xl font-semibold mb-2">View Certificates</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               View and manage all certificates issued by your institution.
             </p>
@@ -265,7 +295,7 @@ export default function InstitutionDashboard() {
           </Link>
 
           <Link
-            href="/institution/profile"
+            href="/institution/students"
             className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg hover:border-black dark:hover:border-white transition duration-200"
           >
             <div className="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
@@ -274,69 +304,21 @@ export default function InstitutionDashboard() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Institution Profile</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Manage your institution details and preferences.</p>
+            <h3 className="text-xl font-semibold mb-2">Manage Students</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              View and manage student records and their certificate status.
+            </p>
             <div className="text-sm font-medium flex items-center gap-1 text-black dark:text-white">
-              <span>Edit Profile</span>
+              <span>Manage Students</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </div>
           </Link>
-        </div>
-
-        <div className="mt-12">
-          <h2 className="text-xl font-bold mb-6">Recent Activity</h2>
-          <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-base-200">
-                    <th className="text-left py-3 px-4 font-medium">Activity</th>
-                    <th className="text-left py-3 px-4 font-medium">Details</th>
-                    <th className="text-left py-3 px-4 font-medium">Date</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t border-gray-200 dark:border-gray-800">
-                    <td className="py-3 px-4">Certificate Issued</td>
-                    <td className="py-3 px-4">B.Ed Certificate for John Doe</td>
-                    <td className="py-3 px-4">May 10, 2025</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 rounded-full">
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-t border-gray-200 dark:border-gray-800">
-                    <td className="py-3 px-4">Certificate Issued</td>
-                    <td className="py-3 px-4">M.Sc Certificate for Jane Smith</td>
-                    <td className="py-3 px-4">May 8, 2025</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 rounded-full">
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-t border-gray-200 dark:border-gray-800">
-                    <td className="py-3 px-4">Profile Updated</td>
-                    <td className="py-3 px-4">Institution details updated</td>
-                    <td className="py-3 px-4">May 5, 2025</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full">
-                        System
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </main>
     </div>

@@ -21,10 +21,15 @@ export const RoleGuard = ({ allowedRoles, redirectTo = "/", children }: RoleGuar
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push(redirectTo);
+    } else if (
+      status === "authenticated" &&
+      session?.user?.role &&
+      !allowedRoles.includes(session.user.role as UserRole)
+    ) {
+      router.push(redirectTo);
     }
-  }, [status, redirectTo, router]);
+  }, [status, session, redirectTo, router, allowedRoles]);
 
-  // Show loading indicator during auth check
   if (status === "loading") {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -33,10 +38,8 @@ export const RoleGuard = ({ allowedRoles, redirectTo = "/", children }: RoleGuar
     );
   }
 
-  // Check if user is authorized to access this route
   const isAuthorized =
     status === "authenticated" && session?.user?.role && allowedRoles.includes(session.user.role as UserRole);
 
-  // Only render children if user is authorized
   return isAuthorized ? <>{children}</> : null;
 };
