@@ -1,127 +1,197 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import CredentialVerifier, { VerificationMethod } from "../../components/verify/CredentialVerifier";
-import {
-  DocumentCheckIcon,
-  DocumentMagnifyingGlassIcon,
-  QrCodeIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+import { useScaffoldContract } from "~~/hooks/scaffold-eth";
 
-export default function VerifyPage() {
-  const [verificationMethod, setVerificationMethod] = useState<VerificationMethod>(null);
+// import { fetchFromIPFS, getIPFSGatewayURL } from "~~/utils/ipfs";
 
-  // Reset verification flow
-  const resetVerification = () => {
-    setVerificationMethod(null);
+interface CertificateData {
+  id: number;
+  student: string;
+  issuer: string;
+  ipfsHash: string;
+  issueDate: number;
+  expiryDate: number;
+  isRevoked: boolean;
+  metadata?: any;
+}
+
+interface CertificateResponse {
+  student: string;
+  issuer: string;
+  ipfsHash: string;
+  issueDate: bigint;
+  expiryDate: bigint;
+  isRevoked: boolean;
+}
+
+export default function VerifyCertificate() {
+  const [certificateId, setCertificateId] = useState("");
+  const [certificateData, setCertificateData] = useState<CertificateData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: contract } = useScaffoldContract({
+    contractName: "Certifi",
+  });
+
+  const verifyCertificate = async () => {
+    if (!certificateId || !contract) {
+      setError("Please enter a certificate ID");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch on-chain certificate data
+      const certificate = (await contract.read.getCertificate([BigInt(certificateId)])) as CertificateResponse;
+
+      if (!certificate) {
+        throw new Error("Certificate not found on blockchain");
+      }
+
+      const certData: CertificateData = {
+        id: Number(certificateId),
+        student: certificate.student,
+        issuer: certificate.issuer,
+        ipfsHash: certificate.ipfsHash,
+        issueDate: Number(certificate.issueDate),
+        expiryDate: Number(certificate.expiryDate),
+        isRevoked: certificate.isRevoked,
+      };
+
+      // Fetch metadata from IPFS
+      try {
+        // const metadata = await fetchFromIPFS(certData.ipfsHash);
+        // certData.metadata = metadata;
+      } catch (error) {
+        console.error("Error fetching metadata:", error);
+        setError("Certificate found but metadata could not be retrieved");
+      }
+
+      setCertificateData(certData);
+    } catch (error) {
+      console.error("Verification error:", error);
+      setError("Failed to verify certificate");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-base-100">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-base-200 to-base-100 dark:from-base-300 dark:to-base-100 border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-4xl font-bold mb-4">Certificate Verification</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Instantly verify the authenticity of academic and professional credentials using blockchain technology.
-          </p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Verify Certificate</h1>
+
+        <div className="mb-8">
+          <div className="flex gap-4">
+            <input
+              type="text"
+              value={certificateId}
+              onChange={e => setCertificateId(e.target.value)}
+              placeholder="Enter Certificate ID"
+              className="input input-bordered flex-1"
+            />
+            <button onClick={verifyCertificate} className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? "Verifying..." : "Verify"}
+            </button>
+          </div>
         </div>
+
+        {error && (
+          <div className="alert alert-error mb-8">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {certificateData && (
+          <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Certificate Details</h2>
+                <p className="text-sm text-gray-500">ID: {certificateData.id}</p>
+              </div>
+              <div className={`badge ${certificateData.isRevoked ? "badge-error" : "badge-success"}`}>
+                {certificateData.isRevoked ? "Revoked" : "Valid"}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <p className="text-sm text-gray-500">Student</p>
+                <p className="font-medium">{certificateData.student}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Issuer</p>
+                <p className="font-medium">{certificateData.issuer}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Issue Date</p>
+                <p className="font-medium">{new Date(certificateData.issueDate * 1000).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Expiry Date</p>
+                <p className="font-medium">
+                  {certificateData.expiryDate
+                    ? new Date(certificateData.expiryDate * 1000).toLocaleDateString()
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
+
+            {certificateData.metadata && (
+              <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+                <h3 className="text-lg font-semibold mb-4">Certificate Metadata</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Course</p>
+                    <p className="font-medium">{certificateData.metadata.attributes.course}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Grade</p>
+                    <p className="font-medium">{certificateData.metadata.attributes.grade}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Student ID</p>
+                    <p className="font-medium">{certificateData.metadata.attributes.studentId}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500 mb-2">Description</p>
+                  <p className="text-sm">{certificateData.metadata.description}</p>
+                </div>
+
+                {certificateData.metadata.image && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 mb-2">Certificate Image</p>
+                    {/* <img
+                      src={getIPFSGatewayURL(certificateData.metadata.image.replace("ipfs://", ""))}
+                      alt="Certificate"
+                      className="max-w-full h-auto rounded-lg"
+                    /> */}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          {!verificationMethod ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button
-                onClick={() => setVerificationMethod("id")}
-                className="p-8 border border-gray-200 dark:border-gray-800 flex flex-col items-center text-center hover:border-black dark:hover:border-white transition duration-200 rounded-lg"
-              >
-                <DocumentMagnifyingGlassIcon className="h-16 w-16 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Certificate ID</h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Enter the unique certificate ID provided by the issuing institution.
-                </p>
-              </button>
-
-              <button
-                onClick={() => setVerificationMethod("qr")}
-                className="p-8 border border-gray-200 dark:border-gray-800 flex flex-col items-center text-center hover:border-black dark:hover:border-white transition duration-200 rounded-lg"
-              >
-                <QrCodeIcon className="h-16 w-16 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">QR Code</h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Scan or enter the verification code from the certificate&apos;s QR code.
-                </p>
-              </button>
-
-              <button
-                onClick={() => setVerificationMethod("file")}
-                className="p-8 border border-gray-200 dark:border-gray-800 flex flex-col items-center text-center hover:border-black dark:hover:border-white transition duration-200 rounded-lg"
-              >
-                <DocumentCheckIcon className="h-16 w-16 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Upload Certificate</h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Upload the certificate PDF or image to verify its authenticity.
-                </p>
-              </button>
-            </div>
-          ) : (
-            <CredentialVerifier verificationMethod={verificationMethod} onReset={resetVerification} />
-          )}
-
-          {/* Help Section */}
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-6 text-center">How Verification Works</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="bg-base-200 dark:bg-base-300 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheckIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Blockchain Security</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Each certificate is secured by blockchain technology, making it impossible to forge or tamper with.
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="bg-base-200 dark:bg-base-300 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <QrCodeIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Instant Verification</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Verify any certificate instantly using its unique ID or QR code, with no account required.
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="bg-base-200 dark:bg-base-300 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <DocumentCheckIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Cryptographic Proof</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Digital signatures ensure certificates come from legitimate institutions and haven&apos;t been
-                  altered.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg inline-block">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Are you a student looking to access your certificates?
-              </p>
-              <Link href="/auth/student" className="btn btn-outline">
-                Student Login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
     </div>
   );
 }

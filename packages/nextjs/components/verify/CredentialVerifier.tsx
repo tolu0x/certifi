@@ -84,10 +84,8 @@ const CredentialVerifier: React.FC<CredentialVerifierProps> = ({ verificationMet
     getMetadata();
   }, [result, fetchMetadata]);
 
-  // Get transaction info from events
   useEffect(() => {
     if (credentialEvents && credentialEvents.length > 0) {
-      // Get the most relevant event (usually the first one for issuance)
       const event = credentialEvents[0];
 
       setTransactionInfo({
