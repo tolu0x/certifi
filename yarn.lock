@@ -4274,6 +4274,7 @@ __metadata:
     ipfs-http-client: ^60.0.1
     kubo-rpc-client: ~5.0.2
     next: ~15.2.3
+    next-auth: ^4.24.11
     next-nprogress-bar: ~2.3.13
     next-themes: ~0.3.0
     postcss: ~8.4.45
