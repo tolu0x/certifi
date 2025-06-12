@@ -6,7 +6,6 @@ import GoogleProvider from "next-auth/providers/google";
 import { recoverMessageAddress } from "viem";
 import { UserRole } from "~~/types/auth";
 
-// Extend the built-in session type
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {

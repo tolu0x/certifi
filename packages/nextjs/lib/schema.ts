@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
+import { varchar } from "drizzle-orm/mysql-core";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const students = sqliteTable("students", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  walletAddress: text("wallet_address").notNull().unique(),
+  id: text("id").primaryKey(),
+  studentId: text("student_id").unique(),
+  walletAddress: text("wallet_address").unique(),
   email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(),
-  dateOfBirth: text("date_of_birth").notNull(),
-  nationality: text("nationality").notNull(),
   phoneNumber: text("phone_number"),
   profileImage: text("profile_image"),
   createdAt: text("created_at")
@@ -42,7 +42,7 @@ export const studentDocuments = sqliteTable("student_documents", {
   studentId: integer("student_id")
     .notNull()
     .references(() => students.id),
-  documentType: text("document_type").notNull(), // e.g., "ID_CARD", "PASSPORT", "DEGREE_CERTIFICATE"
+  documentType: text("document_type").notNull(),
   documentNumber: text("document_number"),
   documentUrl: text("document_url").notNull(),
   ipfsHash: text("ipfs_hash"),

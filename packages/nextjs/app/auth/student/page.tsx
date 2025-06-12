@@ -9,7 +9,7 @@ export default function StudentAuth() {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl: "/student/dashboard",
+        callbackUrl: "/student/onboarding",
       });
     } catch (error) {
       console.error("Auth: Sign in error:", error);
