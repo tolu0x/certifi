@@ -3,7 +3,7 @@ import { eq, exists } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { db } from "~~/lib/db";
-import { students } from "~~/lib/schema";
+import { studentCertificate, students } from "~~/lib/schema";
 
 export const createTRPCContext = async () => {
   const session = await getServerSession();
@@ -19,7 +19,7 @@ type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 const t = initTRPC.context<Context>().create();
 
 const isAuthenticated = t.middleware(({ ctx, next }) => {
-  if (!ctx.session || !ctx.session.user?.email) {
+  if (!ctx.session || !ctx.session.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "You must be logged in to access this resource",
@@ -39,6 +39,18 @@ const protectedProcedure = t.procedure.use(isAuthenticated);
 const createStudentSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
   phoneNumber: z.string().optional(),
+});
+
+const getByStudentIdSchema = z.object({
+  studentId: z.string().min(9, "Student ID must be 9 characters").max(9, "Student ID must be 9 characters"),
+});
+
+const createCertificateSchema = z.object({
+  studentId: z.string(),
+  institution: z.string(),
+  degree: z.string(),
+  fieldOfStudy: z.string(),
+  startDate: z.string(),
 });
 
 export const appRouter = t.router({
@@ -104,7 +116,7 @@ export const appRouter = t.router({
       }
     }),
 
-    getProfile: protectedProcedure.query(async ({ ctx }) => {
+    getProfile: protectedProcedure.query(async ({ ctx, input }) => {
       const email = ctx.session.user!.email!;
 
       const result = await ctx.db.select().from(students).where(eq(students.email, email)).limit(1);
@@ -117,6 +129,46 @@ export const appRouter = t.router({
       }
 
       return result[0];
+    }),
+
+    getByStudentId: protectedProcedure.input(getByStudentIdSchema).query(async ({ ctx, input }) => {
+      const result = await ctx.db.select().from(students).where(eq(students.studentId, input.studentId)).limit(1);
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      return result[0];
+    }),
+  }),
+
+  certificates: t.router({
+    create: protectedProcedure.input(createCertificateSchema).mutation(async ({ ctx, input }) => {
+      try {
+        const result = await ctx.db
+          .insert(studentCertificate)
+          .values({
+            studentId: input.studentId,
+            institution: input.institution,
+            degree: input.degree,
+            fieldOfStudy: input.fieldOfStudy,
+            startDate: input.startDate,
+            createdAt: String(new Date()),
+            updatedAt: String(new Date()),
+          })
+          .returning();
+
+        return {
+          success: true,
+          certificate: result[0],
+        };
+      } catch (error) {
+        console.error("Database error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save certificate data",
+        });
+      }
     }),
   }),
 });

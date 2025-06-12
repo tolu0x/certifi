@@ -8,9 +8,8 @@ export type CertificateData = {
   recipientEmail: string;
   recipientId: string;
   certificateTitle: string;
-  certificateDescription: string;
+  certificateCourse: string;
   issueDate: string;
-  expiryDate?: string;
   templateId: string;
 };
 
@@ -89,9 +88,8 @@ export const useCertifiIssuer = () => {
 
       const metadata: CertificateMetadata = {
         title: certificateData.certificateTitle,
-        description: certificateData.certificateDescription,
+        description: certificateData.certificateCourse,
         issueDate: certificateData.issueDate,
-        expiryDate: certificateData.expiryDate,
         templateId: certificateData.templateId,
         type:
           certificateData.templateId === "1"
@@ -119,14 +117,9 @@ export const useCertifiIssuer = () => {
 
       const credentialHash = generateCredentialHash(certificateData);
 
-      let expiryTimestamp = 0;
-      if (certificateData.expiryDate) {
-        expiryTimestamp = Math.floor(new Date(certificateData.expiryDate).getTime() / 1000);
-      }
-
       const tx = await issueCredential({
         functionName: "issueCredential",
-        args: [credentialHash, recipientAddress, expiryTimestamp, metadataURI],
+        args: [credentialHash, recipientAddress, metadataURI],
       });
 
       setIsUploading(false);

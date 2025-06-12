@@ -18,17 +18,15 @@ export const students = sqliteTable("students", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const studentEducation = sqliteTable("student_education", {
+export const studentCertificate = sqliteTable("student_cert", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  studentId: integer("student_id")
+  studentId: text("student_id")
     .notNull()
     .references(() => students.id),
   institution: text("institution").notNull(),
   degree: text("degree").notNull(),
   fieldOfStudy: text("field_of_study").notNull(),
   startDate: text("start_date").notNull(),
-  endDate: text("end_date"),
-  isCurrent: integer("is_current", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -39,7 +37,7 @@ export const studentEducation = sqliteTable("student_education", {
 
 export const studentDocuments = sqliteTable("student_documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  studentId: integer("student_id")
+  studentId: text("student_id")
     .notNull()
     .references(() => students.id),
   documentType: text("document_type").notNull(),

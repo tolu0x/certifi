@@ -1,24 +1,56 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { trpc } from "~~/lib/trpc/client";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
+
+const studentIdSchema = z.object({
+  studentId: z.string().min(9, "Student ID must be 9 characters").max(9, "Student ID must be 9 characters"),
+  certificateTitle: z.string().min(1, "Certificate title cannot be empty"),
+  certificateCourse: z.string().min(1, "Course cannot be empty"),
+});
+
+type StudentIdFormData = z.infer<typeof studentIdSchema>;
 
 export default function IssueCertificatePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { issueCertificate, isIssuing } = useCertifiIssuer();
+  const createCertificate = trpc.certificates.create.useMutation();
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<StudentIdFormData>({
+    resolver: zodResolver(studentIdSchema),
+  });
+
+  const studentId = watch("studentId");
+  const certificateTitle = watch("certificateTitle");
+  const certificateCourse = watch("certificateCourse");
+
+  const { data: studentData, isLoading: isLoadingStudent } = trpc.students.getByStudentId.useQuery(
+    { studentId },
+    {
+      enabled: studentId?.length === 9,
+    },
+  );
 
   const [formData, setFormData] = useState({
     recipientName: "",
     recipientEmail: "",
     recipientId: "",
     certificateTitle: "",
-    certificateDescription: "",
+    certificateCourse: "",
     issueDate: new Date().toISOString().split("T")[0],
-    expiryDate: "",
     templateId: "1",
   });
 
@@ -67,6 +99,14 @@ export default function IssueCertificatePage() {
   };
 
   const handleNextStep = () => {
+    if (currentStep === 2 && studentData) {
+      setFormData(prev => ({
+        ...prev,
+        recipientName: studentData.fullName || "",
+        recipientEmail: studentData.email || "",
+        recipientId: studentData.studentId || "",
+      }));
+    }
     setCurrentStep(prev => prev + 1);
   };
 
@@ -78,21 +118,21 @@ export default function IssueCertificatePage() {
     setPreviewMode(!previewMode);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitDetails = handleSubmit(async (data: StudentIdFormData) => {
+    console.log("Form submitted with data:", data);
     setIsSubmitting(true);
     setFormError(null);
 
-    setUploadStatus({
-      isUploading: true,
-      step: certificateFile ? "file" : "metadata",
-      progress: 0,
-    });
+    // setUploadStatus({
+    //   isUploading: true,
+    //   step: certificateFile ? "file" : "metadata",
+    //   progress: 0,
+    // });
 
     try {
       const mockRecipientAddress = `0x${Math.random().toString(36).substring(2, 10)}${"0".repeat(34)}`;
 
-      const institutionName = session.user.name || "Demo Institution";
+      const institutionName = session.user.name || "LASU";
       const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
 
       if (certificateFile) {
@@ -111,30 +151,43 @@ export default function IssueCertificatePage() {
         progress: 0,
       });
 
-      // Simulate progress for metadata upload
-      for (let i = 0; i <= 100; i += 20) {
-        setUploadStatus(prev => ({
-          ...prev,
-          progress: i,
-        }));
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      setUploadStatus({
-        isUploading: true,
-        step: "blockchain",
-        progress: 0,
+      // Save certificate data to database
+      console.log("Attempting to save certificate to database...");
+      const certResult = await createCertificate.mutateAsync({
+        studentId: studentData?.id || "",
+        institution: "LASU",
+        degree: formData.certificateTitle,
+        fieldOfStudy: formData.certificateCourse,
+        startDate: formData.issueDate,
       });
+      console.log("Certificate saved to database:", certResult);
 
-      const result = await issueCertificate(
-        formData,
-        mockRecipientAddress,
-        institutionName,
-        institutionAddress,
-        certificateFile || undefined,
-      );
+      console.log(createCertificate.isSuccess, "create cert in db");
 
-      console.log("Certificate issued successfully:", result);
+      // Simulate progress for metadata upload
+      // for (let i = 0; i <= 100; i += 20) {
+      //   setUploadStatus(prev => ({
+      //     ...prev,
+      //     progress: i,
+      //   }));
+      //   await new Promise(resolve => setTimeout(resolve, 200));
+      // }
+
+      // setUploadStatus({
+      //   isUploading: true,
+      //   step: "blockchain",
+      //   progress: 0,
+      // });
+
+      // const result = await issueCertificate(
+      //   formData,
+      //   mockRecipientAddress,
+      //   institutionName,
+      //   institutionAddress,
+      //   certificateFile || undefined,
+      // );
+
+      // console.log("Certificate issued successfully:", result);
 
       setUploadStatus({
         isUploading: true,
@@ -143,8 +196,6 @@ export default function IssueCertificatePage() {
       });
 
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // TODO: Store additional metadata in your database, send an email notification to the recipient, generate a QR code for the certificate
 
       router.push("/institution/certificates");
     } catch (error) {
@@ -157,7 +208,7 @@ export default function IssueCertificatePage() {
         progress: 0,
       });
     }
-  };
+  });
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -226,156 +277,220 @@ export default function IssueCertificatePage() {
 
         {/* Form Container */}
         <div className="max-w-3xl mx-auto border border-gray-200 dark:border-gray-800 rounded-lg">
-          <form onSubmit={handleSubmit}>
-            {/* Step 1: Template Selection */}
-            {currentStep === 1 && (
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-6">Select Certificate Template</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {certificateTemplates.map(template => (
-                    <div
-                      key={template.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        formData.templateId === template.id
-                          ? "border-black dark:border-white bg-gray-50 dark:bg-gray-900"
-                          : "border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"
-                      }`}
-                      onClick={() => setFormData(prev => ({ ...prev, templateId: template.id }))}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border ${
-                            formData.templateId === template.id
-                              ? "border-black dark:border-white bg-black dark:bg-white"
-                              : "border-gray-400"
-                          }`}
-                        >
-                          {formData.templateId === template.id && (
-                            <div className="w-full h-full rounded-full bg-black dark:bg-white" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{template.name}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
-                        </div>
+          {/* Step 1: Template Selection */}
+          {currentStep === 1 && (
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6">Select Certificate Template</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {certificateTemplates.map(template => (
+                  <div
+                    key={template.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      formData.templateId === template.id
+                        ? "border-black dark:border-white bg-gray-50 dark:bg-gray-900"
+                        : "border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"
+                    }`}
+                    onClick={() => setFormData(prev => ({ ...prev, templateId: template.id }))}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 rounded-full border ${
+                          formData.templateId === template.id
+                            ? "border-black dark:border-white bg-black dark:bg-white"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        {formData.templateId === template.id && (
+                          <div className="w-full h-full rounded-full bg-black dark:bg-white" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{template.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                {formData.templateId === "4" && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium mb-2">Upload Custom Certificate Template</label>
-                    <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center">
-                      {certificateFile ? (
-                        <div>
-                          <p className="mb-2 text-sm">{certificateFile.name}</p>
-                          <button
-                            type="button"
-                            onClick={() => setCertificateFile(null)}
-                            className="text-sm text-red-600 dark:text-red-400 underline"
-                          >
-                            Remove file
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <svg
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1}
-                              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            PDF or image file (.pdf, .jpg, .png)
-                          </p>
-                          <input
-                            type="file"
-                            id="certificate-template"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={handleFileChange}
-                            className="hidden"
+              {formData.templateId === "4" && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">Upload Custom Certificate Template</label>
+                  <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center">
+                    {certificateFile ? (
+                      <div>
+                        <p className="mb-2 text-sm">{certificateFile.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => setCertificateFile(null)}
+                          className="text-sm text-red-600 dark:text-red-400 underline"
+                        >
+                          Remove file
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1}
+                            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                           />
-                          <label
-                            htmlFor="certificate-template"
-                            className="mt-2 inline-block cursor-pointer btn btn-sm btn-outline"
-                          >
-                            Browse Files
-                          </label>
-                        </div>
+                        </svg>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                          PDF or image file (.pdf, .jpg, .png)
+                        </p>
+                        <input
+                          type="file"
+                          id="certificate-template"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="certificate-template"
+                          className="mt-2 inline-block cursor-pointer btn btn-sm btn-outline"
+                        >
+                          Browse Files
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="btn btn-primary"
+                  disabled={formData.templateId === "4" && !certificateFile}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Certificate Details */}
+          {currentStep === 2 && (
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6">Certificate Details</h2>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Recipient Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="studentId">
+                        Student ID
+                      </label>
+                      <input
+                        type="text"
+                        id="studentId"
+                        {...register("studentId")}
+                        className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
+                        placeholder="Enter 9-digit student ID"
+                      />
+                      {errors.studentId && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.studentId.message}</p>
                       )}
                     </div>
                   </div>
-                )}
 
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="btn btn-primary"
-                    disabled={formData.templateId === "4" && !certificateFile}
-                  >
-                    Continue
-                  </button>
+                  {isLoadingStudent && (
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="loading loading-spinner loading-sm"></span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Looking up student details...</span>
+                    </div>
+                  )}
+
+                  {studentData && (
+                    <div className="mt-6 p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+                      <h4 className="font-medium mb-3">Student Details</h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Name:</span>
+                          <p>{studentData.fullName}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
+                          <p>{studentData.email}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Student ID:</span>
+                          <p>{studentData.studentId}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isLoadingStudent && studentId?.length === 9 && !studentData && (
+                    <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-yellow-700 dark:text-yellow-400">No student found with this ID.</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {/* Step 2: Certificate Details */}
-            {currentStep === 2 && (
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-6">Certificate Details</h2>
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Certificate Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="certificateTitle">
+                        Certificate Title
+                      </label>
+                      <input
+                        type="text"
+                        id="certificateTitle"
+                        {...register("certificateTitle")} // Use register instead of manual handling
+                        placeholder="e.g., Bachelor of Education"
+                        className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
+                        onChange={e => {
+                          handleChange(e); // Keep the existing handler for formData sync
+                        }}
+                      />
+                      {errors.certificateTitle && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.certificateTitle.message}</p>
+                      )}
+                    </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Recipient Information</h3>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="certificateCourse">
+                        Course of study
+                      </label>
+                      <input
+                        type="text"
+                        id="certificateCourse"
+                        {...register("certificateCourse")} // Use register instead of manual handling
+                        placeholder="e.g Computer Science"
+                        className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
+                        onChange={e => {
+                          handleChange(e); // Keep the existing handler for formData sync
+                        }}
+                      />
+                      {errors.certificateCourse && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {errors.certificateCourse.message}
+                        </p>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2" htmlFor="recipientName">
-                          Recipient Full Name
+                        <label className="block text-sm font-medium mb-2" htmlFor="issueDate">
+                          Issue Date
                         </label>
                         <input
-                          type="text"
-                          id="recipientName"
-                          name="recipientName"
-                          value={formData.recipientName}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2" htmlFor="recipientEmail">
-                          Recipient Email
-                        </label>
-                        <input
-                          type="email"
-                          id="recipientEmail"
-                          name="recipientEmail"
-                          value={formData.recipientEmail}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2" htmlFor="recipientId">
-                          Student ID / Registration Number
-                        </label>
-                        <input
-                          type="text"
-                          id="recipientId"
-                          name="recipientId"
-                          value={formData.recipientId}
+                          type="date"
+                          id="issueDate"
+                          name="issueDate"
+                          value={formData.issueDate}
                           onChange={handleChange}
                           className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
                           required
@@ -383,89 +498,23 @@ export default function IssueCertificatePage() {
                       </div>
                     </div>
                   </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Certificate Information</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2" htmlFor="certificateTitle">
-                          Certificate Title
-                        </label>
-                        <input
-                          type="text"
-                          id="certificateTitle"
-                          name="certificateTitle"
-                          value={formData.certificateTitle}
-                          onChange={handleChange}
-                          placeholder="e.g., Bachelor of Education"
-                          className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2" htmlFor="certificateDescription">
-                          Certificate Description
-                        </label>
-                        <textarea
-                          id="certificateDescription"
-                          name="certificateDescription"
-                          value={formData.certificateDescription}
-                          onChange={handleChange}
-                          rows={3}
-                          placeholder="Describe what this certificate represents..."
-                          className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                          required
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2" htmlFor="issueDate">
-                            Issue Date
-                          </label>
-                          <input
-                            type="date"
-                            id="issueDate"
-                            name="issueDate"
-                            value={formData.issueDate}
-                            onChange={handleChange}
-                            className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-2" htmlFor="expiryDate">
-                            Expiry Date (Optional)
-                          </label>
-                          <input
-                            type="date"
-                            id="expiryDate"
-                            name="expiryDate"
-                            value={formData.expiryDate}
-                            onChange={handleChange}
-                            className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between mt-8">
-                  <button type="button" onClick={handlePreviousStep} className="btn btn-outline">
-                    Back
-                  </button>
-                  <button type="button" onClick={handleNextStep} className="btn btn-primary">
-                    Continue
-                  </button>
                 </div>
               </div>
-            )}
 
-            {/* Step 3: Review and Submit */}
-            {currentStep === 3 && (
+              <div className="flex justify-between mt-8">
+                <button type="button" onClick={handlePreviousStep} className="btn btn-outline">
+                  Back
+                </button>
+                <button type="button" onClick={handleNextStep} className="btn btn-primary" disabled={!studentData}>
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review and Submit */}
+          {currentStep === 3 && (
+            <form onSubmit={handleSubmitDetails}>
               <div className="p-6">
                 <h2 className="text-xl font-bold mb-6">Review Certificate</h2>
 
@@ -493,8 +542,8 @@ export default function IssueCertificatePage() {
                       <p className="mb-6 text-lg">This certifies that</p>
                       <p className="text-2xl font-bold mb-6">{formData.recipientName}</p>
                       <p className="mb-6 text-lg">has successfully completed</p>
-                      <p className="text-2xl font-bold mb-6">{formData.certificateTitle}</p>
-                      <p className="mb-12 text-lg">{formData.certificateDescription}</p>
+                      <p className="text-2xl font-bold mb-6">{certificateTitle || formData.certificateTitle}</p>
+                      <p className="mb-12 text-lg">{certificateCourse || formData.certificateCourse}</p>
 
                       <div className="flex justify-between items-end">
                         <div>
@@ -539,26 +588,20 @@ export default function IssueCertificatePage() {
                           <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-2">
                             <div>
                               <span className="text-sm text-gray-600 dark:text-gray-400">Title:</span>
-                              <p>{formData.certificateTitle}</p>
+                              <p>{certificateTitle || formData.certificateTitle}</p>
                             </div>
                             <div>
                               <span className="text-sm text-gray-600 dark:text-gray-400">Issue Date:</span>
                               <p>{new Date(formData.issueDate).toLocaleDateString()}</p>
                             </div>
-                            {formData.expiryDate && (
-                              <div>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">Expiry Date:</span>
-                                <p>{new Date(formData.expiryDate).toLocaleDateString()}</p>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
 
                       <div>
-                        <h4 className="font-medium mb-2">Description</h4>
+                        <h4 className="font-medium mb-2">Course</h4>
                         <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                          <p>{formData.certificateDescription}</p>
+                          <p>{certificateCourse || formData.certificateCourse}</p>
                         </div>
                       </div>
 
@@ -638,8 +681,9 @@ export default function IssueCertificatePage() {
                       "Issue Certificate"
                     )}
                   </button>
+                </div>
 
-                  {/* Upload Progress Indicator */}
+                {/* Upload Progress Indicator
                   {uploadStatus.isUploading && (
                     <div className="mt-4">
                       <div className="flex justify-between text-xs mb-1">
@@ -692,11 +736,10 @@ export default function IssueCertificatePage() {
                         </span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  )} */}
               </div>
-            )}
-          </form>
+            </form>
+          )}
         </div>
       </main>
     </div>
