@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { trpc } from "~~/lib/trpc/client";
 
 export default function StudentOnboarding() {
   const router = useRouter();
@@ -11,18 +13,34 @@ export default function StudentOnboarding() {
 
   const [formData, setFormData] = useState({
     studentId: "",
-    dateOfBirth: "",
     phoneNumber: "",
   });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    data: userCheckData,
+    isLoading: isCheckingUser,
+    error: userCheckError,
+  } = trpc.students.checkUser.useQuery(undefined, {
+    enabled: status === "authenticated",
+    retry: false,
+  });
+
+  const createOrUpdate = trpc.students.createOrUpdate.useMutation();
 
   useEffect(() => {
     if (status === "unauthenticated") {
       console.log("Unauthenticated, redirecting to login from onboarding");
       router.push("/auth/student");
     }
-  }, [status, router]);
+    console.log("cecking", isCheckingUser);
+    if (!isCheckingUser && userCheckData?.exists && userCheckData.user?.id) {
+      console.log("Found existing user with complete profile:", userCheckData.user);
+      router.push("/student/dashboard");
+    } else {
+      console.log("not found", userCheckData?.user);
+    }
+  }, [status, router, isCheckingUser, userCheckData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,9 +52,11 @@ export default function StudentOnboarding() {
     setIsSubmitting(true);
 
     try {
-      setTimeout(() => {
-        router.push("/student/dashboard");
-      }, 1000);
+      await createOrUpdate.mutateAsync({
+        studentId: formData.studentId,
+        phoneNumber: formData.phoneNumber || "",
+      });
+      console.log("done");
     } catch (error) {
       console.error("Error completing profile:", error);
       setIsSubmitting(false);
@@ -61,7 +81,14 @@ export default function StudentOnboarding() {
           <div className="flex items-center gap-4 mb-8 p-4 bg-base-200 rounded-lg">
             <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
               {session?.user?.image ? (
-                <img src={session.user.image} alt={session.user.name || ""} className="h-full w-full object-cover" />
+                <Image
+                  width={24}
+                  height={24}
+                  priority
+                  src={session.user.image}
+                  alt={session.user.name || ""}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <svg className="h-6 w-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08c-1.29 1.94-3.5 3.22-6 3.22z" />
@@ -95,24 +122,6 @@ export default function StudentOnboarding() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" htmlFor="dateOfBirth">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                id="dateOfBirth"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
-                required
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Used for additional verification and security
-              </p>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium mb-2" htmlFor="phoneNumber">
                 Phone Number
               </label>
@@ -122,7 +131,7 @@ export default function StudentOnboarding() {
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                placeholder="+1 (234) 567-8900"
+                placeholder="+234 8000-000-000"
                 className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
