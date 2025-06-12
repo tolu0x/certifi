@@ -34,8 +34,8 @@ const Home: NextPage = () => {
             </div>
           ) : (
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/demo" className="btn btn-primary px-8 py-2">
-                Try Demo
+              <Link href="/auth/student" className="btn btn-primary px-8 py-2">
+                Student Login
               </Link>
               <Link href="/verify" className="btn btn-outline px-8 py-2">
                 Verify a Certificate
@@ -46,52 +46,50 @@ const Home: NextPage = () => {
       </section>
 
       {/* Main Features Section */}
-      <section className="py-20">
+      <section className="py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
             <div>
               <h2 className="text-3xl font-bold mb-8">For Students</h2>
               <p className="text-lg mb-6">
-                Store and manage your academic credentials securely on the blockchain. Share them with employers and
-                institutions with confidence.
+                Receive, store, and share your academic credentials securely. Never worry about losing your certificates
+                or having to request physical copies again.
               </p>
 
               <div className="space-y-4 mb-8">
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mt-1">
-                    <AcademicCapIcon className="h-6 w-6" />
+                    <ShieldCheckIcon className="h-6 w-6" />
                   </div>
                   <div className="ml-4">
                     <h3 className="font-semibold">Secure Storage</h3>
-                    <p>
-                      Your certificates are stored on the blockchain, ensuring they can never be lost or tampered with.
-                    </p>
+                    <p>Your credentials are stored securely and accessible anywhere, anytime.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mt-1">
-                    <AcademicCapIcon className="h-6 w-6" />
+                    <ShieldCheckIcon className="h-6 w-6" />
                   </div>
                   <div className="ml-4">
                     <h3 className="font-semibold">Easy Sharing</h3>
-                    <p>Share your credentials with employers and institutions with a simple link.</p>
+                    <p>Share your verified credentials with employers or other institutions in seconds.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mt-1">
-                    <AcademicCapIcon className="h-6 w-6" />
+                    <ShieldCheckIcon className="h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <h3 className="font-semibold">Instant Verification</h3>
-                    <p>Anyone can instantly verify the authenticity of your certificates.</p>
+                    <h3 className="font-semibold">Tamper-Proof</h3>
+                    <p>Blockchain technology ensures your credentials cannot be altered or falsified.</p>
                   </div>
                 </div>
               </div>
 
-              <Link href="/demo" className="btn btn-primary">
-                Try Demo
+              <Link href="/auth/student" className="btn btn-primary">
+                Access Your Credentials
               </Link>
             </div>
 
@@ -134,8 +132,8 @@ const Home: NextPage = () => {
                 </div>
               </div>
 
-              <Link href="/verify" className="btn btn-primary">
-                Verify Now
+              <Link href="/verify" className="btn btn-outline">
+                Verify a Certificate
               </Link>
             </div>
           </div>
