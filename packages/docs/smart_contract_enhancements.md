@@ -13,21 +13,13 @@ struct Credential {
     address issuer;
     address recipient;
     uint256 issueDate;
-    string metadataURI; // URI pointing to off-chain metadata (IPFS or other storage)
 }
 ```
 
 ## Metadata Support
 
-We've added support for storing metadata with credentials:
+1. **Issue Date**: Each credential now automatically stores the timestamp when it was issued.
 
-1. **Metadata URI**: Each credential can now include a URI that points to additional off-chain metadata (such as an IPFS hash). This allows for storing larger documents and detailed information without incurring high gas costs.
-
-2. **Expiration Dates**: Credentials can now have an optional expiration date. When the expiration date passes, the credential is automatically considered invalid.
-
-3. **Issue Date**: Each credential now automatically stores the timestamp when it was issued.
-
-4. **Issuer and Recipient**: We explicitly store the issuer and recipient addresses for each credential.
 
 ## Credential Revocation
 
@@ -37,15 +29,15 @@ We've implemented credential revocation functionality:
 
 2. **Revocation Status**: Each credential includes a `isRevoked` flag that tracks whether it has been revoked.
 
-3. **Validation Logic**: All verification methods now check the revocation status and expiration date of credentials.
+3. **Validation Logic**: All verification methods now check the revocation status of credentials.
 
 ## Enhanced Verification Methods
 
 We've improved the verification methods:
 
-1. **Comprehensive Verification**: The `verifyCredential` function now returns detailed information about the credential, including its validity status, issuer, issue date, and metadata URI.
+1. **Comprehensive Verification**: The `verifyCredential` function now returns detailed information about the credential, including its validity status, issuer, and issue date.
 
-2. **Simple Verification**: Added an `isCredentialValid` function that provides a simple boolean check for whether a credential is valid (issued, not revoked, and not expired).
+2. **Simple Verification**: Added an `isCredentialValid` function that provides a simple boolean check for whether a credential is valid (issued, and not revoked).
 
 3. **Signature Verification**: Updated the `verifyCredentialWithSignature` function to check revocation status and expiration date.
 

@@ -75,7 +75,6 @@ Certificate {
   description: String
   issueDate: Timestamp
   metadata: JSON (additional information)
-  documentURI: String (IPFS hash or other storage reference)
   revoked: Boolean
 }
 ```
