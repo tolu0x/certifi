@@ -17,7 +17,6 @@ contract Certifi {
         bool isRevoked;
         address issuer;
         uint256 issueDate;
-        string metadataURI;
         bytes32 documentHash;
     }
 
@@ -30,8 +29,7 @@ contract Certifi {
     event CredentialIssued(
         bytes32 indexed credentialHash, 
         address indexed issuer, 
-        uint256 issueDate, 
-        string metadataURI
+        uint256 issueDate
     );
     event CredentialRevoked(bytes32 indexed credentialHash, address indexed issuer);
     event InstitutionApproved(address indexed institution);
@@ -79,11 +77,9 @@ contract Certifi {
     /**
      * Issues a new credential with metadata and records it on the blockchain
      * @param credentialHash The hash of the credential data
-     * @param metadataURI URI pointing to off-chain metadata
      */
     function issueCredential(
         bytes32 credentialHash, 
-        string calldata metadataURI,
         bytes32 documentHash
     ) external onlyApprovedInstitution {
         require(!credentials[credentialHash].isIssued, "Credential already issued");
@@ -93,7 +89,6 @@ contract Certifi {
             isRevoked: false,
             issuer: msg.sender,
             issueDate: block.timestamp,
-            metadataURI: metadataURI,
             documentHash: documentHash
         });
         
@@ -102,8 +97,7 @@ contract Certifi {
         emit CredentialIssued(
             credentialHash, 
             msg.sender, 
-            block.timestamp, 
-            metadataURI
+            block.timestamp 
         );
     }
 
@@ -119,7 +113,6 @@ contract Certifi {
             isRevoked: false,
             issuer: msg.sender,
             issueDate: block.timestamp,
-            metadataURI: "",
             documentHash: bytes32(0)
         });
         
@@ -128,8 +121,7 @@ contract Certifi {
         emit CredentialIssued(
             credentialHash, 
             msg.sender, 
-            block.timestamp, 
-            ""
+            block.timestamp
         );
     }
 
@@ -164,7 +156,6 @@ contract Certifi {
             bool isValid, 
             address issuer, 
             uint256 issueDate, 
-            string memory metadataURI,
             bytes32 documentHash
         ) 
     {
@@ -177,7 +168,6 @@ contract Certifi {
             valid,
             cred.issuer,
             cred.issueDate,
-            cred.metadataURI,
             cred.documentHash
         );
     }

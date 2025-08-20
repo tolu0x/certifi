@@ -13,84 +13,7 @@ import { sha256 } from "viem";
 // import { uploadToIPFS } from "~~/utils/ipfs";
 
 
-// Function to generate certificate image
-const generateCertificateImage = (certificateData: {
-  recipientName: string;
-  certificateTitle: string;
-  certificateCourse: string;
-  issueDate: string;
-  institutionName: string;
-}): Promise<Blob> => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    
-    // Set canvas size
-    canvas.width = 1200;
-    canvas.height = 850;
-    
-    // Background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Border
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-    
-    // Inner border
-    ctx.lineWidth = 2;
-    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
-    
-    // Title
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 48px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('CERTIFICATE OF ACHIEVEMENT', canvas.width / 2, 150);
-    
-    // Institution name
-    ctx.font = 'bold 32px serif';
-    ctx.fillText(certificateData.institutionName, canvas.width / 2, 200);
-    
-    // "This is to certify that"
-    ctx.font = '24px serif';
-    ctx.fillText('This is to certify that', canvas.width / 2, 280);
-    
-    // Recipient name
-    ctx.font = 'bold 42px serif';
-    ctx.fillText(certificateData.recipientName, canvas.width / 2, 340);
-    
-    // "has successfully completed"
-    ctx.font = '24px serif';
-    ctx.fillText('has successfully completed', canvas.width / 2, 400);
-    
-    // Certificate title
-    ctx.font = 'bold 36px serif';
-    ctx.fillText(certificateData.certificateTitle, canvas.width / 2, 460);
-    
-    // Course
-    ctx.font = '28px serif';
-    ctx.fillText(`in ${certificateData.certificateCourse}`, canvas.width / 2, 520);
-    
-    // Date
-    ctx.font = '20px serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Date: ${new Date(certificateData.issueDate).toLocaleDateString()}`, 100, 700);
-    
-    // Signature line
-    ctx.textAlign = 'right';
-    ctx.fillText('Authorized Signature', canvas.width - 100, 700);
-    ctx.beginPath();
-    ctx.moveTo(canvas.width - 300, 680);
-    ctx.lineTo(canvas.width - 100, 680);
-    ctx.stroke();
-    
-    // Convert to blob
-    canvas.toBlob((blob) => {
-      resolve(blob!);
-    }, 'image/png');
-  });
-};
+
 
 const studentIdSchema = z.object({
   studentId: z.string().min(9, "Student ID must be 9 characters").max(9, "Student ID must be 9 characters"),
@@ -216,114 +139,11 @@ export default function IssueCertificatePage() {
     setIsSubmitting(true);
     setFormError(null);
 
-    // setUploadStatus({
-    //   isUploading: true,
-    //   step: certificateFile ? "file" : "metadata",
-    //   progress: 0,
-    // });
-
     try {
       const mockRecipientAddress = `0x${Math.random().toString(36).substring(2, 10)}${"0".repeat(34)}`;
 
       const institutionName = session.user.name || "LASU";
       const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
-
-      let certificateIpfsHash = "";
-
-      // Generate and upload certificate image to IPFS
-      // setUploadStatus({
-      //   isUploading: true,
-      //   step: "file",
-      //   progress: 0,
-      // });
-
-      const certificateBlob = await generateCertificateImage({
-        recipientName: formData.recipientName,
-        certificateTitle: formData.certificateTitle,
-        certificateCourse: formData.certificateCourse,
-        issueDate: formData.issueDate,
-        institutionName,
-      });
-
-      // const arrayBuffer = Uint8Array();
-
-
-      // const certificateUrl = URL.createObjectURL(certificateBlob);
-      // window.open(certificateUrl, '_blank');
-      // setTimeout(() => URL.revokeObjectURL(certificateUrl), 1000);
-
-      // console.log("image", certificateUrl);
-
-      // for (let i = 0; i <= 100; i += 20) {
-      //   setUploadStatus(prev => ({
-      //     ...prev,
-      //     progress: i,
-      //   }));
-      //   await new Promise(resolve => setTimeout(resolve, 200));
-      // }
-
-      // certificateIpfsHash = await uploadToIPFS(certificateBlob);
-      // console.log("Certificate image uploaded to IPFS:", certificateIpfsHash);
-
-      // setUploadStatus({
-      //   isUploading: true,
-      //   step: "metadata",
-      //   progress: 0,
-      // });
-
-      // const metadata = {
-      //   name: `${formData.certificateTitle} Certificate`,
-      //   description: `Certificate of ${formData.certificateTitle} in ${formData.certificateCourse}`,
-      //   image: certificateIpfsHash ? `ipfs://${certificateIpfsHash}` : "",
-      //   attributes: {
-      //     studentId: studentData?.studentId || "",
-      //     studentName: formData.recipientName,
-      //     institution: institutionName,
-      //     degree: formData.certificateTitle,
-      //     fieldOfStudy: formData.certificateCourse,
-      //     issueDate: formData.issueDate,
-      //     issuer: institutionName,
-      //   },
-      // };
-
-      // Upload metadata to IPFS
-      // let metadataIpfsHash = "";
-      // if (certificateIpfsHash || Object.keys(metadata.attributes).length > 0) {
-      //   const metadataBlob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
-      //   // metadataIpfsHash = await uploadToIPFS(metadataBlob);
-      //   console.log("Metadata uploaded to IPFS:", metadataIpfsHash);
-      // }
-
-      // // Save certificate data to database with IPFS hashes
-      // console.log("Attempting to save certificate to database...");
-      // const certResult = await createCertificate.mutateAsync({
-      //   studentId: studentData?.id || "",
-      //   institution: "LASU",
-      //   degree: formData.certificateTitle,
-      //   fieldOfStudy: formData.certificateCourse,
-      //   startDate: formData.issueDate,
-      //   // Add IPFS hashes to database record
-      //   certificateIpfsHash: certificateIpfsHash || undefined,
-      //   metadataIpfsHash: metadataIpfsHash || undefined,
-      // });
-      // console.log("Certificate saved to database:", certResult);
-
-      // console.log(createCertificate.isSuccess, "create cert in db");
-
-      // Simulate progress for metadata upload
-      // for (let i = 0; i <= 100; i += 20) {
-      //   setUploadStatus(prev => ({
-      //     ...prev,
-      //     progress: i,
-      //   }));
-      //   await new Promise(resolve => setTimeout(resolve, 200));
-      // }
-
-      // setUploadStatus({
-      //   isUploading: true,
-      //   step: "blockchain",
-      //   progress: 0,
-      // });
 
       const result = await issueCertificate(
         formData,
@@ -331,18 +151,9 @@ export default function IssueCertificatePage() {
         institutionName,
         institutionAddress,
         documentHash,
-        certificateFile || undefined,
       );
 
-      // console.log("Certificate issued successfully:", result);
-
-      // setUploadStatus({
-      //   isUploading: true,
-      //   step: "blockchain",
-      //   progress: 100,
-      // });
-
-      // await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("Certificate issued successfully:", result);
 
       router.push("/institution/certificates");
     } catch (error) {
