@@ -72,7 +72,6 @@ contract CertifiTest is Test {
             bool isValid,
             address issuer,
             uint256 issueDate,
-            string memory returnedMetadataURI,
             bytes32 returnedDocumentHash
         ) = certifi.verifyCredential(credentialHash);
 
@@ -102,20 +101,18 @@ contract CertifiTest is Test {
 
         // Issue credential as institution with metadata
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, metadataURI, documentHash);
+        certifi.issueCredential(credentialHash, documentHash);
 
         // Verify credential is issued with correct metadata
         (
             bool isValid,
             address issuer,
             uint256 issueDate,
-            string memory returnedMetadataURI,
             bytes32 returnedDocumentHash
         ) = certifi.verifyCredential(credentialHash);
 
         assertTrue(isValid);
         assertEq(issuer, institution);
-        assertEq(returnedMetadataURI, metadataURI);
         assertGt(issueDate, 0);
     }
 
