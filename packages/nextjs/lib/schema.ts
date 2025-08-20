@@ -27,6 +27,8 @@ export const studentCertificate = sqliteTable("student_cert", {
   degree: text("degree").notNull(),
   fieldOfStudy: text("field_of_study").notNull(),
   startDate: text("start_date").notNull(),
+  certificateIpfsHash: text("certificate_ipfs_hash"),
+  metadataIpfsHash: text("metadata_ipfs_hash"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
