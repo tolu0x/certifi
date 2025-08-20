@@ -151,7 +151,6 @@ const CredentialVerifier: React.FC<CredentialVerifierProps> = ({ verificationMet
         title: metadata.title,
         type: metadata.type,
         issueDate: result.issueDate.toISOString(),
-        expiryDate: result.expiryDate?.toISOString(),
       },
       issuer: {
         address: result.issuer,
@@ -178,7 +177,6 @@ const CredentialVerifier: React.FC<CredentialVerifierProps> = ({ verificationMet
   };
 
   const formattedIssueDate = result?.issueDate.toLocaleDateString();
-  const formattedExpiryDate = result?.expiryDate?.toLocaleDateString();
   const verificationTimestamp = new Date().toISOString();
 
   // Render verification form when idle
@@ -424,13 +422,6 @@ const CredentialVerifier: React.FC<CredentialVerifierProps> = ({ verificationMet
                     <p className="text-sm text-gray-500 dark:text-gray-400">Issue Date</p>
                     <p className="font-medium">{formattedIssueDate}</p>
                   </div>
-
-                  {result.expiryDate && (
-                    <div className="border-b border-gray-200 dark:border-gray-800 pb-2">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Expiry Date</p>
-                      <p className="font-medium">{formattedExpiryDate}</p>
-                    </div>
-                  )}
                 </div>
 
                 {metadata.achievements && metadata.achievements.length > 0 && (

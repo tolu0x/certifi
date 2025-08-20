@@ -5,7 +5,6 @@ export type CredentialVerificationResult = {
   isValid: boolean;
   issuer: string;
   issueDate: Date;
-  expiryDate?: Date;
   metadataURI: string;
   credentialHash: string;
 };
@@ -56,21 +55,15 @@ export const useVerifyCredential = (credentialHash: string | null) => {
 
     if (!isVerificationLoading && verificationData) {
       try {
-        const [isValid, issuer, issueDateRaw, expiryDateRaw, metadataURI] = verificationData;
+        const [isValid, issuer, issueDateRaw, metadataURI] = verificationData;
 
         // Convert timestamp to Date objects
         const issueDate = new Date(Number(issueDateRaw) * 1000);
-        let expiryDate: Date | undefined = undefined;
-
-        if (Number(expiryDateRaw) > 0) {
-          expiryDate = new Date(Number(expiryDateRaw) * 1000);
-        }
 
         setResult({
           isValid,
           issuer,
           issueDate,
-          expiryDate,
           metadataURI,
           credentialHash,
         });

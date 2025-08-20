@@ -9,6 +9,88 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { trpc } from "~~/lib/trpc/client";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
+import { sha256 } from "viem";
+// import { uploadToIPFS } from "~~/utils/ipfs";
+
+
+// Function to generate certificate image
+const generateCertificateImage = (certificateData: {
+  recipientName: string;
+  certificateTitle: string;
+  certificateCourse: string;
+  issueDate: string;
+  institutionName: string;
+}): Promise<Blob> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    
+    // Set canvas size
+    canvas.width = 1200;
+    canvas.height = 850;
+    
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Border
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    
+    // Inner border
+    ctx.lineWidth = 2;
+    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+    
+    // Title
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 48px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CERTIFICATE OF ACHIEVEMENT', canvas.width / 2, 150);
+    
+    // Institution name
+    ctx.font = 'bold 32px serif';
+    ctx.fillText(certificateData.institutionName, canvas.width / 2, 200);
+    
+    // "This is to certify that"
+    ctx.font = '24px serif';
+    ctx.fillText('This is to certify that', canvas.width / 2, 280);
+    
+    // Recipient name
+    ctx.font = 'bold 42px serif';
+    ctx.fillText(certificateData.recipientName, canvas.width / 2, 340);
+    
+    // "has successfully completed"
+    ctx.font = '24px serif';
+    ctx.fillText('has successfully completed', canvas.width / 2, 400);
+    
+    // Certificate title
+    ctx.font = 'bold 36px serif';
+    ctx.fillText(certificateData.certificateTitle, canvas.width / 2, 460);
+    
+    // Course
+    ctx.font = '28px serif';
+    ctx.fillText(`in ${certificateData.certificateCourse}`, canvas.width / 2, 520);
+    
+    // Date
+    ctx.font = '20px serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Date: ${new Date(certificateData.issueDate).toLocaleDateString()}`, 100, 700);
+    
+    // Signature line
+    ctx.textAlign = 'right';
+    ctx.fillText('Authorized Signature', canvas.width - 100, 700);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - 300, 680);
+    ctx.lineTo(canvas.width - 100, 680);
+    ctx.stroke();
+    
+    // Convert to blob
+    canvas.toBlob((blob) => {
+      resolve(blob!);
+    }, 'image/png');
+  });
+};
 
 const studentIdSchema = z.object({
   studentId: z.string().min(9, "Student ID must be 9 characters").max(9, "Student ID must be 9 characters"),
@@ -51,14 +133,14 @@ export default function IssueCertificatePage() {
     certificateTitle: "",
     certificateCourse: "",
     issueDate: new Date().toISOString().split("T")[0],
-    templateId: "1",
   });
 
-  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [previewMode, setPreviewMode] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [documentHash, setDocumentHash] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<{
     isUploading: boolean;
     step: "file" | "metadata" | "blockchain" | null;
@@ -68,6 +150,28 @@ export default function IssueCertificatePage() {
     step: null,
     progress: 0,
   });
+
+  useEffect(() => {
+    if (certificateFile) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          const buffer = event.target.result as ArrayBuffer;
+          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          setDocumentHash(hashHex);
+        }
+      };
+      reader.readAsArrayBuffer(certificateFile);
+    }
+  }, [certificateFile]);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setCertificateFile(e.target.files[0]);
+    }
+  };
 
   if (status === "unauthenticated" || session?.user?.role !== "institution") {
     router.replace("/auth/institution");
@@ -80,26 +184,15 @@ export default function IssueCertificatePage() {
     return null;
   }
 
-  const certificateTemplates = [
-    { id: "1", name: "Academic Degree", description: "Standard academic degree certificate" },
-    { id: "2", name: "Professional Course", description: "Certificate for professional course completion" },
-    { id: "3", name: "Workshop", description: "Workshop or seminar attendance certificate" },
-    { id: "4", name: "Custom", description: "Upload your own certificate template" },
-  ];
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setCertificateFile(e.target.files[0]);
-    }
-  };
 
   const handleNextStep = () => {
-    if (currentStep === 2 && studentData) {
+    if (currentStep === 1 && studentData) {
       setFormData(prev => ({
         ...prev,
         recipientName: studentData.fullName || "",
@@ -135,34 +228,87 @@ export default function IssueCertificatePage() {
       const institutionName = session.user.name || "LASU";
       const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
 
-      if (certificateFile) {
-        for (let i = 0; i <= 100; i += 10) {
-          setUploadStatus(prev => ({
-            ...prev,
-            progress: i,
-          }));
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
+      let certificateIpfsHash = "";
 
-      setUploadStatus({
-        isUploading: true,
-        step: "metadata",
-        progress: 0,
+      // Generate and upload certificate image to IPFS
+      // setUploadStatus({
+      //   isUploading: true,
+      //   step: "file",
+      //   progress: 0,
+      // });
+
+      const certificateBlob = await generateCertificateImage({
+        recipientName: formData.recipientName,
+        certificateTitle: formData.certificateTitle,
+        certificateCourse: formData.certificateCourse,
+        issueDate: formData.issueDate,
+        institutionName,
       });
 
-      // Save certificate data to database
-      console.log("Attempting to save certificate to database...");
-      const certResult = await createCertificate.mutateAsync({
-        studentId: studentData?.id || "",
-        institution: "LASU",
-        degree: formData.certificateTitle,
-        fieldOfStudy: formData.certificateCourse,
-        startDate: formData.issueDate,
-      });
-      console.log("Certificate saved to database:", certResult);
+      // const arrayBuffer = Uint8Array();
 
-      console.log(createCertificate.isSuccess, "create cert in db");
+
+      // const certificateUrl = URL.createObjectURL(certificateBlob);
+      // window.open(certificateUrl, '_blank');
+      // setTimeout(() => URL.revokeObjectURL(certificateUrl), 1000);
+
+      // console.log("image", certificateUrl);
+
+      // for (let i = 0; i <= 100; i += 20) {
+      //   setUploadStatus(prev => ({
+      //     ...prev,
+      //     progress: i,
+      //   }));
+      //   await new Promise(resolve => setTimeout(resolve, 200));
+      // }
+
+      // certificateIpfsHash = await uploadToIPFS(certificateBlob);
+      // console.log("Certificate image uploaded to IPFS:", certificateIpfsHash);
+
+      // setUploadStatus({
+      //   isUploading: true,
+      //   step: "metadata",
+      //   progress: 0,
+      // });
+
+      // const metadata = {
+      //   name: `${formData.certificateTitle} Certificate`,
+      //   description: `Certificate of ${formData.certificateTitle} in ${formData.certificateCourse}`,
+      //   image: certificateIpfsHash ? `ipfs://${certificateIpfsHash}` : "",
+      //   attributes: {
+      //     studentId: studentData?.studentId || "",
+      //     studentName: formData.recipientName,
+      //     institution: institutionName,
+      //     degree: formData.certificateTitle,
+      //     fieldOfStudy: formData.certificateCourse,
+      //     issueDate: formData.issueDate,
+      //     issuer: institutionName,
+      //   },
+      // };
+
+      // Upload metadata to IPFS
+      // let metadataIpfsHash = "";
+      // if (certificateIpfsHash || Object.keys(metadata.attributes).length > 0) {
+      //   const metadataBlob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
+      //   // metadataIpfsHash = await uploadToIPFS(metadataBlob);
+      //   console.log("Metadata uploaded to IPFS:", metadataIpfsHash);
+      // }
+
+      // // Save certificate data to database with IPFS hashes
+      // console.log("Attempting to save certificate to database...");
+      // const certResult = await createCertificate.mutateAsync({
+      //   studentId: studentData?.id || "",
+      //   institution: "LASU",
+      //   degree: formData.certificateTitle,
+      //   fieldOfStudy: formData.certificateCourse,
+      //   startDate: formData.issueDate,
+      //   // Add IPFS hashes to database record
+      //   certificateIpfsHash: certificateIpfsHash || undefined,
+      //   metadataIpfsHash: metadataIpfsHash || undefined,
+      // });
+      // console.log("Certificate saved to database:", certResult);
+
+      // console.log(createCertificate.isSuccess, "create cert in db");
 
       // Simulate progress for metadata upload
       // for (let i = 0; i <= 100; i += 20) {
@@ -179,23 +325,24 @@ export default function IssueCertificatePage() {
       //   progress: 0,
       // });
 
-      // const result = await issueCertificate(
-      //   formData,
-      //   mockRecipientAddress,
-      //   institutionName,
-      //   institutionAddress,
-      //   certificateFile || undefined,
-      // );
+      const result = await issueCertificate(
+        formData,
+        mockRecipientAddress,
+        institutionName,
+        institutionAddress,
+        documentHash,
+        certificateFile || undefined,
+      );
 
       // console.log("Certificate issued successfully:", result);
 
-      setUploadStatus({
-        isUploading: true,
-        step: "blockchain",
-        progress: 100,
-      });
+      // setUploadStatus({
+      //   isUploading: true,
+      //   step: "blockchain",
+      //   progress: 100,
+      // });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await new Promise(resolve => setTimeout(resolve, 1000));
 
       router.push("/institution/certificates");
     } catch (error) {
@@ -231,7 +378,7 @@ export default function IssueCertificatePage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between max-w-2xl mx-auto px-4">
+          <div className="flex items-center justify-between max-w-xl mx-auto px-4">
             <div
               className={`flex flex-col items-center ${currentStep >= 1 ? "text-black dark:text-white" : "text-gray-400"}`}
             >
@@ -240,7 +387,7 @@ export default function IssueCertificatePage() {
               >
                 1
               </div>
-              <span className="text-sm">Template</span>
+              <span className="text-sm">Details</span>
             </div>
 
             <div
@@ -255,21 +402,6 @@ export default function IssueCertificatePage() {
               >
                 2
               </div>
-              <span className="text-sm">Details</span>
-            </div>
-
-            <div
-              className={`flex-1 h-0.5 ${currentStep >= 3 ? "bg-black dark:bg-white" : "bg-gray-200 dark:bg-gray-700"}`}
-            ></div>
-
-            <div
-              className={`flex flex-col items-center ${currentStep >= 3 ? "text-black dark:text-white" : "text-gray-400"}`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${currentStep >= 3 ? "bg-black dark:bg-white text-white dark:text-black" : "bg-gray-200 dark:bg-gray-700 text-gray-600"}`}
-              >
-                3
-              </div>
               <span className="text-sm">Review</span>
             </div>
           </div>
@@ -277,109 +409,8 @@ export default function IssueCertificatePage() {
 
         {/* Form Container */}
         <div className="max-w-3xl mx-auto border border-gray-200 dark:border-gray-800 rounded-lg">
-          {/* Step 1: Template Selection */}
+          {/* Step 1: Certificate Details */}
           {currentStep === 1 && (
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-6">Select Certificate Template</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {certificateTemplates.map(template => (
-                  <div
-                    key={template.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      formData.templateId === template.id
-                        ? "border-black dark:border-white bg-gray-50 dark:bg-gray-900"
-                        : "border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, templateId: template.id }))}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-full border ${
-                          formData.templateId === template.id
-                            ? "border-black dark:border-white bg-black dark:bg-white"
-                            : "border-gray-400"
-                        }`}
-                      >
-                        {formData.templateId === template.id && (
-                          <div className="w-full h-full rounded-full bg-black dark:bg-white" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{template.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {formData.templateId === "4" && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">Upload Custom Certificate Template</label>
-                  <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center">
-                    {certificateFile ? (
-                      <div>
-                        <p className="mb-2 text-sm">{certificateFile.name}</p>
-                        <button
-                          type="button"
-                          onClick={() => setCertificateFile(null)}
-                          className="text-sm text-red-600 dark:text-red-400 underline"
-                        >
-                          Remove file
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1}
-                            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                          PDF or image file (.pdf, .jpg, .png)
-                        </p>
-                        <input
-                          type="file"
-                          id="certificate-template"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                        <label
-                          htmlFor="certificate-template"
-                          className="mt-2 inline-block cursor-pointer btn btn-sm btn-outline"
-                        >
-                          Browse Files
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="btn btn-primary"
-                  disabled={formData.templateId === "4" && !certificateFile}
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Certificate Details */}
-          {currentStep === 2 && (
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6">Certificate Details</h2>
 
@@ -481,6 +512,26 @@ export default function IssueCertificatePage() {
                       )}
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium mb-2" htmlFor="certificateFile">
+                        Certificate Document (PDF)
+                      </label>
+                      <input
+                        type="file"
+                        id="certificateFile"
+                        name="certificateFile"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
+                      />
+                    </div>
+                    {documentHash && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Document Hash (SHA-256):</p>
+                        <p className="font-mono text-sm">{documentHash}</p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-2" htmlFor="issueDate">
@@ -512,8 +563,8 @@ export default function IssueCertificatePage() {
             </div>
           )}
 
-          {/* Step 3: Review and Submit */}
-          {currentStep === 3 && (
+          {/* Step 2: Review and Submit */}
+          {currentStep === 2 && (
             <form onSubmit={handleSubmitDetails}>
               <div className="p-6">
                 <h2 className="text-xl font-bold mb-6">Review Certificate</h2>
@@ -605,12 +656,6 @@ export default function IssueCertificatePage() {
                         </div>
                       </div>
 
-                      <div>
-                        <h4 className="font-medium mb-2">Template</h4>
-                        <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                          <p>{certificateTemplates.find(t => t.id === formData.templateId)?.name}</p>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -633,8 +678,9 @@ export default function IssueCertificatePage() {
                     <div>
                       <h3 className="font-medium text-blue-800 dark:text-blue-300">Important Information</h3>
                       <p className="mt-1 text-blue-700 dark:text-blue-400 text-sm">
-                        Once issued, this certificate will be recorded on the blockchain and cannot be altered. The
-                        recipient will be notified via email once the certificate is issued.
+                        Once issued, this certificate will be uploaded to IPFS for permanent storage and recorded in the database. 
+                        If you upload a certificate file, it will be stored on IPFS along with the certificate metadata. 
+                        The recipient will be notified via email once the certificate is issued.
                       </p>
                     </div>
                   </div>
@@ -683,60 +729,62 @@ export default function IssueCertificatePage() {
                   </button>
                 </div>
 
-                {/* Upload Progress Indicator
-                  {uploadStatus.isUploading && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>
-                          {uploadStatus.step === "file"
-                            ? "Uploading Certificate File"
-                            : uploadStatus.step === "metadata"
-                              ? "Uploading Certificate Metadata"
-                              : uploadStatus.step === "blockchain"
-                                ? "Creating Blockchain Record"
-                                : "Processing..."}
-                        </span>
-                        <span>{uploadStatus.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div
-                          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                          style={{ width: `${uploadStatus.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="mt-2 flex justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span
-                          className={
-                            uploadStatus.step === "file" ||
-                            uploadStatus.step === "metadata" ||
-                            uploadStatus.step === "blockchain"
-                              ? "text-blue-600 dark:text-blue-400 font-medium"
-                              : ""
-                          }
-                        >
-                          IPFS Upload
-                        </span>
-                        <span>→</span>
-                        <span
-                          className={
-                            uploadStatus.step === "metadata" || uploadStatus.step === "blockchain"
-                              ? "text-blue-600 dark:text-blue-400 font-medium"
-                              : ""
-                          }
-                        >
-                          Metadata Storage
-                        </span>
-                        <span>→</span>
-                        <span
-                          className={
-                            uploadStatus.step === "blockchain" ? "text-blue-600 dark:text-blue-400 font-medium" : ""
-                          }
-                        >
-                          Blockchain Record
-                        </span>
-                      </div>
+                {/* Upload Progress Indicator */}
+                {uploadStatus.isUploading && (
+                  <div className="mt-4">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>
+                        {uploadStatus.step === "file"
+                          ? "Uploading Certificate File to IPFS"
+                          : uploadStatus.step === "metadata"
+                            ? "Uploading Certificate Metadata to IPFS"
+                            : uploadStatus.step === "blockchain"
+                              ? "Creating Blockchain Record"
+                              : "Processing..."}
+                      </span>
+                      <span>{uploadStatus.progress}%</span>
                     </div>
-                  )} */}
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                      <div
+                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                        style={{ width: `${uploadStatus.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-2 flex justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span
+                        className={
+                          uploadStatus.step === "file"
+                            ? "text-blue-600 dark:text-blue-400 font-medium"
+                            : uploadStatus.step === "metadata" || uploadStatus.step === "blockchain"
+                              ? "text-green-600 dark:text-green-400 font-medium"
+                              : ""
+                        }
+                      >
+                        Certificate Upload
+                      </span>
+                      <span>→</span>
+                      <span
+                        className={
+                          uploadStatus.step === "metadata"
+                            ? "text-blue-600 dark:text-blue-400 font-medium"
+                            : uploadStatus.step === "blockchain"
+                              ? "text-green-600 dark:text-green-400 font-medium"
+                              : ""
+                        }
+                      >
+                        Metadata Storage
+                      </span>
+                      <span>→</span>
+                      <span
+                        className={
+                          uploadStatus.step === "blockchain" ? "text-blue-600 dark:text-blue-400 font-medium" : ""
+                        }
+                      >
+                        Database Record
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </form>
           )}

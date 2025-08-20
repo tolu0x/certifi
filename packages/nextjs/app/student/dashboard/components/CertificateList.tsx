@@ -10,7 +10,6 @@ interface Certificate {
   issuer: string;
   ipfsHash: string;
   issueDate: number;
-  expiryDate: number;
   isRevoked: boolean;
   metadata?: any;
 }
@@ -48,7 +47,6 @@ export default function CertificateList({ studentAddress }: CertificateListProps
               issuer: cert.issuer,
               ipfsHash: cert.ipfsHash,
               issueDate: Number(cert.issueDate),
-              expiryDate: Number(cert.expiryDate),
               isRevoked: cert.isRevoked,
               metadata,
             };
@@ -60,7 +58,6 @@ export default function CertificateList({ studentAddress }: CertificateListProps
               issuer: cert.issuer,
               ipfsHash: cert.ipfsHash,
               issueDate: Number(cert.issueDate),
-              expiryDate: Number(cert.expiryDate),
               isRevoked: cert.isRevoked,
             };
           }
@@ -147,12 +144,6 @@ export default function CertificateList({ studentAddress }: CertificateListProps
             <div>
               <p className="text-sm text-gray-500">Issue Date</p>
               <p className="font-medium">{new Date(cert.issueDate * 1000).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Expiry Date</p>
-              <p className="font-medium">
-                {cert.expiryDate ? new Date(cert.expiryDate * 1000).toLocaleDateString() : "N/A"}
-              </p>
             </div>
             {cert.metadata?.attributes?.grade && (
               <div>

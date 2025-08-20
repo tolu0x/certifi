@@ -10,16 +10,12 @@ export type CertificateData = {
   certificateTitle: string;
   certificateCourse: string;
   issueDate: string;
-  templateId: string;
 };
 
 export type CertificateMetadata = {
   title: string;
   description: string;
   issueDate: string;
-  expiryDate?: string;
-  templateId: string;
-  type: string;
   institution: {
     name: string;
     address: string;
@@ -64,6 +60,7 @@ export const useCertifiIssuer = () => {
     recipientAddress: string,
     institutionName: string,
     institutionAddress: string,
+    documentHash: string | null,
     certificateFile?: File,
   ) => {
     try {
@@ -90,15 +87,6 @@ export const useCertifiIssuer = () => {
         title: certificateData.certificateTitle,
         description: certificateData.certificateCourse,
         issueDate: certificateData.issueDate,
-        templateId: certificateData.templateId,
-        type:
-          certificateData.templateId === "1"
-            ? "Academic Degree"
-            : certificateData.templateId === "2"
-              ? "Professional Course"
-              : certificateData.templateId === "3"
-                ? "Workshop"
-                : "Custom",
         institution: {
           name: institutionName,
           address: institutionAddress,
@@ -119,7 +107,7 @@ export const useCertifiIssuer = () => {
 
       const tx = await issueCredential({
         functionName: "issueCredential",
-        args: [credentialHash, recipientAddress, metadataURI],
+        args: [credentialHash, 0, metadataURI, documentHash],
       });
 
       setIsUploading(false);

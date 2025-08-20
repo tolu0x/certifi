@@ -12,7 +12,6 @@ interface CertificateFormData {
   course: string;
   grade: string;
   issueDate: string;
-  expiryDate: string;
   description: string;
   certificateFile: File | null;
 }
@@ -27,7 +26,6 @@ export default function IssueCertificate() {
     course: "",
     grade: "",
     issueDate: new Date().toISOString().split("T")[0],
-    expiryDate: "",
     description: "",
     certificateFile: null,
   });
@@ -69,7 +67,6 @@ export default function IssueCertificate() {
           course: formData.course,
           grade: formData.grade,
           issueDate: formData.issueDate,
-          expiryDate: formData.expiryDate || "N/A",
           issuer: session?.user?.name || "Unknown Institution",
         },
       };
@@ -85,7 +82,6 @@ export default function IssueCertificate() {
           metadataIpfsHash,
           "ACADEMIC",
           Math.floor(new Date(formData.issueDate).getTime() / 1000),
-          formData.expiryDate ? Math.floor(new Date(formData.expiryDate).getTime() / 1000) : 0,
         ],
       });
 
@@ -176,20 +172,6 @@ export default function IssueCertificate() {
               onChange={handleChange}
               className="w-full input input-bordered"
               required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" htmlFor="expiryDate">
-              Expiry Date (Optional)
-            </label>
-            <input
-              type="date"
-              id="expiryDate"
-              name="expiryDate"
-              value={formData.expiryDate}
-              onChange={handleChange}
-              className="w-full input input-bordered"
             />
           </div>
 

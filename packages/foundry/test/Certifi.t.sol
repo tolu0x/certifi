@@ -59,14 +59,13 @@ contract CertifiTest is Test {
         
         // Issue credential as institution
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Verify credential is issued
-        (bool isValid, address issuer, uint256 issueDate, uint256 expiryDate, string memory metadataURI) = certifi.verifyCredential(credentialHash);
+        (bool isValid, address issuer, uint256 issueDate, string memory metadataURI) = certifi.verifyCredential(credentialHash);
         
         assertTrue(isValid);
         assertEq(issuer, institution);
-        assertEq(expiryDate, 0);
         assertEq(metadataURI, "");
         assertGt(issueDate, 0);
     }
@@ -79,20 +78,17 @@ contract CertifiTest is Test {
         // Approve institution
         certifi.approveInstitution(institution);
         
-        // Future expiry date (1 year from now)
-        uint256 expiryDate = block.timestamp + 365 days;
         string memory metadataURI = "ipfs://QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco";
         
         // Issue credential as institution with metadata
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, student, expiryDate, metadataURI);
+        certifi.issueCredential(credentialHash, metadataURI);
         
         // Verify credential is issued with correct metadata
-        (bool isValid, address issuer, uint256 issueDate, uint256 returnedExpiryDate, string memory returnedMetadataURI) = certifi.verifyCredential(credentialHash);
+        (bool isValid, address issuer, uint256 issueDate, string memory returnedMetadataURI) = certifi.verifyCredential(credentialHash);
         
         assertTrue(isValid);
         assertEq(issuer, institution);
-        assertEq(returnedExpiryDate, expiryDate);
         assertEq(returnedMetadataURI, metadataURI);
         assertGt(issueDate, 0);
     }
@@ -102,7 +98,7 @@ contract CertifiTest is Test {
         bytes32 credentialHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
         
         vm.prank(student);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
     }
 
     // Test revoking a credential
@@ -115,7 +111,7 @@ contract CertifiTest is Test {
         
         // Issue credential as institution
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Verify credential is valid
         assertTrue(certifi.isCredentialValid(credentialHash));
@@ -140,29 +136,11 @@ contract CertifiTest is Test {
         
         // Issue credential as institution
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Try to revoke as other institution
         vm.prank(otherInstitution);
         certifi.revokeCredential(credentialHash);
-    }
-
-    // Test expired credential validation
-    function testExpiredCredential() public {
-        // Create a credential hash
-        bytes32 credentialHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
-        
-        // Approve institution
-        certifi.approveInstitution(institution);
-        
-        // Issue credential with an expiry date in the past
-        uint256 expiryDate = block.timestamp - 1;
-        
-        vm.prank(institution);
-        certifi.issueCredential(credentialHash, student, expiryDate, "");
-        
-        // Verify credential is invalid due to expiration
-        assertFalse(certifi.isCredentialValid(credentialHash));
     }
 
     // Test verification with signature
@@ -183,7 +161,7 @@ contract CertifiTest is Test {
         
         // Issue credential as the institution
         vm.prank(institutionWithKey);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Verify with signature
         bool verified = certifi.verifyCredentialWithSignature(credentialHash, signature, institutionWithKey);
@@ -200,7 +178,7 @@ contract CertifiTest is Test {
         
         // Issue credential
         vm.prank(institution);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Create an incorrect signature
         uint256 wrongPrivateKey = 0xB0B;
@@ -230,7 +208,7 @@ contract CertifiTest is Test {
         
         // Issue credential as the institution
         vm.prank(institutionWithKey);
-        certifi.issueCredential(credentialHash, student);
+        certifi.issueCredential(credentialHash);
         
         // Revoke the credential
         vm.prank(institutionWithKey);

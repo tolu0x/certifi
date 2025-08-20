@@ -13,7 +13,6 @@ struct Credential {
     address issuer;
     address recipient;
     uint256 issueDate;
-    uint256 expiryDate; // 0 means no expiration
     string metadataURI; // URI pointing to off-chain metadata (IPFS or other storage)
 }
 ```
@@ -44,7 +43,7 @@ We've implemented credential revocation functionality:
 
 We've improved the verification methods:
 
-1. **Comprehensive Verification**: The `verifyCredential` function now returns detailed information about the credential, including its validity status, issuer, issue date, expiry date, and metadata URI.
+1. **Comprehensive Verification**: The `verifyCredential` function now returns detailed information about the credential, including its validity status, issuer, issue date, and metadata URI.
 
 2. **Simple Verification**: Added an `isCredentialValid` function that provides a simple boolean check for whether a credential is valid (issued, not revoked, and not expired).
 

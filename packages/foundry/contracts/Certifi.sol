@@ -12,49 +12,38 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  */
 contract Certifi {
     using ECDSA for bytes32;
-
-    // Credential structure to store additional metadata
     struct Credential {
         bool isIssued;
         bool isRevoked;
         address issuer;
-        address recipient;
         uint256 issueDate;
-        uint256 expiryDate; // 0 means no expiration
-        string metadataURI; // URI pointing to off-chain metadata (IPFS or other storage)
+        string metadataURI;
+        bytes32 documentHash;
     }
 
-    // State Variables
-    address public immutable owner;
+    address public immutable admin;
     
-    // Mapping from credential hash to Credential struct
     mapping(bytes32 => Credential) public credentials;
     
-    // Mapping from institution address to approval status
     mapping(address => bool) public approvedInstitutions;
     
-    // Events
     event CredentialIssued(
         bytes32 indexed credentialHash, 
         address indexed issuer, 
-        address indexed recipient, 
         uint256 issueDate, 
-        uint256 expiryDate, 
         string metadataURI
     );
     event CredentialRevoked(bytes32 indexed credentialHash, address indexed issuer);
     event InstitutionApproved(address indexed institution);
     event InstitutionRevoked(address indexed institution);
 
-    // Constructor
-    constructor(address _owner) {
-        owner = _owner;
-        approvedInstitutions[_owner] = true;
+    constructor(address _admin) {
+        admin = _admin;
+        approvedInstitutions[_admin] = true;
     }
 
-    // Modifiers
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not the owner");
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Not the owner");
         _;
     }
     
@@ -72,7 +61,7 @@ contract Certifi {
      * Approves an institution to issue credentials
      * @param institution The address of the institution to approve
      */
-    function approveInstitution(address institution) external onlyOwner {
+    function approveInstitution(address institution) external onlyAdmin {
         approvedInstitutions[institution] = true;
         emit InstitutionApproved(institution);
     }
@@ -81,8 +70,8 @@ contract Certifi {
      * Revokes an institution's approval to issue credentials
      * @param institution The address of the institution to revoke
      */
-    function revokeInstitution(address institution) external onlyOwner {
-        require(institution != owner, "Cannot revoke owner");
+    function revokeInstitution(address institution) external onlyAdmin {
+        require(institution != admin, "Cannot revoke owner");
         approvedInstitutions[institution] = false;
         emit InstitutionRevoked(institution);
     }
@@ -90,15 +79,12 @@ contract Certifi {
     /**
      * Issues a new credential with metadata and records it on the blockchain
      * @param credentialHash The hash of the credential data
-     * @param recipient The address of the credential recipient
-     * @param expiryDate The expiration date of the credential (0 for no expiration)
      * @param metadataURI URI pointing to off-chain metadata
      */
     function issueCredential(
         bytes32 credentialHash, 
-        address recipient, 
-        uint256 expiryDate, 
-        string calldata metadataURI
+        string calldata metadataURI,
+        bytes32 documentHash
     ) external onlyApprovedInstitution {
         require(!credentials[credentialHash].isIssued, "Credential already issued");
         
@@ -106,10 +92,9 @@ contract Certifi {
             isIssued: true,
             isRevoked: false,
             issuer: msg.sender,
-            recipient: recipient,
             issueDate: block.timestamp,
-            expiryDate: expiryDate,
-            metadataURI: metadataURI
+            metadataURI: metadataURI,
+            documentHash: documentHash
         });
         
         credentials[credentialHash] = newCredential;
@@ -117,9 +102,7 @@ contract Certifi {
         emit CredentialIssued(
             credentialHash, 
             msg.sender, 
-            recipient, 
             block.timestamp, 
-            expiryDate, 
             metadataURI
         );
     }
@@ -127,19 +110,17 @@ contract Certifi {
     /**
      * Issues a new credential without additional metadata (backwards compatibility)
      * @param credentialHash The hash of the credential data
-     * @param recipient The address of the credential recipient
      */
-    function issueCredential(bytes32 credentialHash, address recipient) external onlyApprovedInstitution {
+    function issueCredential(bytes32 credentialHash) external onlyApprovedInstitution {
         require(!credentials[credentialHash].isIssued, "Credential already issued");
         
         Credential memory newCredential = Credential({
             isIssued: true,
             isRevoked: false,
             issuer: msg.sender,
-            recipient: recipient,
             issueDate: block.timestamp,
-            expiryDate: 0,
-            metadataURI: ""
+            metadataURI: "",
+            documentHash: bytes32(0)
         });
         
         credentials[credentialHash] = newCredential;
@@ -147,9 +128,7 @@ contract Certifi {
         emit CredentialIssued(
             credentialHash, 
             msg.sender, 
-            recipient, 
             block.timestamp, 
-            0, 
             ""
         );
     }
@@ -177,7 +156,6 @@ contract Certifi {
      * @return isValid True if the credential is valid (issued and not revoked or expired)
      * @return issuer The address of the credential issuer
      * @return issueDate The date when the credential was issued
-     * @return expiryDate The expiration date of the credential (0 for no expiration)
      */
     function verifyCredential(bytes32 credentialHash) 
         external 
@@ -186,22 +164,21 @@ contract Certifi {
             bool isValid, 
             address issuer, 
             uint256 issueDate, 
-            uint256 expiryDate,
-            string memory metadataURI
+            string memory metadataURI,
+            bytes32 documentHash
         ) 
     {
         Credential memory cred = credentials[credentialHash];
         
         bool valid = cred.isIssued && 
-                   !cred.isRevoked && 
-                   (cred.expiryDate == 0 || block.timestamp <= cred.expiryDate);
+                   !cred.isRevoked;
         
         return (
             valid,
             cred.issuer,
             cred.issueDate,
-            cred.expiryDate,
-            cred.metadataURI
+            cred.metadataURI,
+            cred.documentHash
         );
     }
 
@@ -214,8 +191,7 @@ contract Certifi {
         Credential memory cred = credentials[credentialHash];
         
         return cred.isIssued && 
-               !cred.isRevoked && 
-               (cred.expiryDate == 0 || block.timestamp <= cred.expiryDate);
+               !cred.isRevoked;
     }
 
     /**
@@ -234,8 +210,7 @@ contract Certifi {
         
         // Check if the credential is valid
         if (!cred.isIssued || 
-            cred.isRevoked || 
-            (cred.expiryDate != 0 && block.timestamp > cred.expiryDate)) {
+            cred.isRevoked ) {
             return false;
         }
         

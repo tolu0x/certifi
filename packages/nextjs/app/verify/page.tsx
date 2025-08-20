@@ -11,7 +11,6 @@ interface CertificateData {
   issuer: string;
   ipfsHash: string;
   issueDate: number;
-  expiryDate: number;
   isRevoked: boolean;
   metadata?: any;
 }
@@ -21,7 +20,6 @@ interface CertificateResponse {
   issuer: string;
   ipfsHash: string;
   issueDate: bigint;
-  expiryDate: bigint;
   isRevoked: boolean;
 }
 
@@ -58,7 +56,6 @@ export default function VerifyCertificate() {
         issuer: certificate.issuer,
         ipfsHash: certificate.ipfsHash,
         issueDate: Number(certificate.issueDate),
-        expiryDate: Number(certificate.expiryDate),
         isRevoked: certificate.isRevoked,
       };
 
@@ -143,14 +140,6 @@ export default function VerifyCertificate() {
               <div>
                 <p className="text-sm text-gray-500">Issue Date</p>
                 <p className="font-medium">{new Date(certificateData.issueDate * 1000).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Expiry Date</p>
-                <p className="font-medium">
-                  {certificateData.expiryDate
-                    ? new Date(certificateData.expiryDate * 1000).toLocaleDateString()
-                    : "N/A"}
-                </p>
               </div>
             </div>
 
