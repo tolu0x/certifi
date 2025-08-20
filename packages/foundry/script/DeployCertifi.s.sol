@@ -5,7 +5,6 @@ import "./DeployHelpers.s.sol";
 import "../contracts/Certifi.sol";
 
 contract DeployCertifi is ScaffoldETHDeploy {
-    error InvalidPrivateKey(string);
 
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();

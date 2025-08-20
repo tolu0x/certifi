@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { Script, console } from "forge-std/Script.sol";
-import { Vm } from "forge-std/Vm.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract ScaffoldETHDeploy is Script {
     error InvalidChain();
@@ -38,7 +38,7 @@ contract ScaffoldETHDeploy is Script {
 
     function _startBroadcast() internal returns (address) {
         vm.startBroadcast();
-        (, address _deployer,) = vm.readCallers();
+        (, address _deployer, ) = vm.readCallers();
 
         if (block.chainid == 31337 && _deployer.balance == 0) {
             try this.anvil_setBalance(_deployer, ANVIL_BASE_BALANCE) {
@@ -54,6 +54,22 @@ contract ScaffoldETHDeploy is Script {
         vm.stopBroadcast();
     }
 
+    function setupLocalhostEnv()
+        internal
+        returns (uint256 localhostPrivateKey)
+    {
+        if (block.chainid == 31337) {
+            root = vm.projectRoot();
+            path = string.concat(root, "/localhost.json");
+            string memory json = vm.readFile(path);
+            bytes memory mnemonicBytes = vm.parseJson(json, ".wallet.mnemonic");
+            string memory mnemonic = abi.decode(mnemonicBytes, (string));
+            return vm.deriveKey(mnemonic, 0);
+        } else {
+            return vm.envUint("DEPLOYER_PRIVATE_KEY");
+        }
+    }
+
     function exportDeployments() internal {
         // fetch already existing contracts
         root = vm.projectRoot();
@@ -66,7 +82,11 @@ contract ScaffoldETHDeploy is Script {
         uint256 len = deployments.length;
 
         for (uint256 i = 0; i < len; i++) {
-            vm.serializeString(jsonWrite, vm.toString(deployments[i].addr), deployments[i].name);
+            vm.serializeString(
+                jsonWrite,
+                vm.toString(deployments[i].addr),
+                deployments[i].name
+            );
         }
 
         string memory chainName;
@@ -88,7 +108,11 @@ contract ScaffoldETHDeploy is Script {
         string memory addressString = vm.toString(addr);
         string memory amountString = vm.toString(amount);
         string memory requestPayload = string.concat(
-            '{"method":"anvil_setBalance","params":["', addressString, '","', amountString, '"],"id":1,"jsonrpc":"2.0"}'
+            '{"method":"anvil_setBalance","params":["',
+            addressString,
+            '","',
+            amountString,
+            '"],"id":1,"jsonrpc":"2.0"}'
         );
 
         string[] memory inputs = new string[](8);
