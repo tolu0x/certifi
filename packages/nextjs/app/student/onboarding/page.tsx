@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { trpc } from "~~/lib/trpc/client";
+import { notification } from "~~/utils/scaffold-eth";
 
 export default function StudentOnboarding() {
   const router = useRouter();
@@ -13,7 +14,6 @@ export default function StudentOnboarding() {
 
   const [formData, setFormData] = useState({
     studentId: "",
-    phoneNumber: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,12 +33,12 @@ export default function StudentOnboarding() {
       console.log("Unauthenticated, redirecting to login from onboarding");
       router.push("/auth/student");
     }
-    console.log("cecking", isCheckingUser);
+    
     if (!isCheckingUser && userCheckData?.exists && userCheckData.user?.id) {
-      console.log("Found existing user with complete profile:", userCheckData.user);
       router.push("/student/dashboard");
     } else {
-      console.log("not found", userCheckData?.user);
+      notification.error("User not found!")
+      router.push("/auth/student");
     }
   }, [status, router, isCheckingUser, userCheckData]);
 
@@ -54,11 +54,10 @@ export default function StudentOnboarding() {
     try {
       await createOrUpdate.mutateAsync({
         studentId: formData.studentId,
-        phoneNumber: formData.phoneNumber || "",
       });
-      console.log("done");
+      router.refresh();
     } catch (error) {
-      console.error("Error completing profile:", error);
+      notification.error("Error completing profile");
       setIsSubmitting(false);
     }
   };
@@ -118,24 +117,6 @@ export default function StudentOnboarding() {
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 This helps match your certificates to your institutional records
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2" htmlFor="phoneNumber">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                placeholder="+234 8000-000-000"
-                className="w-full border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Optional: For notifications about new certificates (we&apos;ll never share your number)
               </p>
             </div>
 

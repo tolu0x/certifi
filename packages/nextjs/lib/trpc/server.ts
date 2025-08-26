@@ -1,5 +1,5 @@
 import { TRPCError, initTRPC } from "@trpc/server";
-import { eq, exists } from "drizzle-orm";
+import { eq, exists, sql } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { db } from "~~/lib/db";
@@ -50,7 +50,8 @@ const createCertificateSchema = z.object({
   institution: z.string(),
   degree: z.string(),
   fieldOfStudy: z.string(),
-  startDate: z.string(),
+  issueDate: z.string(),
+  documentHash: z.string().optional(),
 });
 
 export const appRouter = t.router({
@@ -94,7 +95,6 @@ export const appRouter = t.router({
             .update(students)
             .set({
               id: input.studentId,
-              phoneNumber: input.phoneNumber || null,
               updatedAt: String(new Date()),
             })
             .where(eq(students.email, email))
@@ -152,7 +152,8 @@ export const appRouter = t.router({
             institution: input.institution,
             degree: input.degree,
             fieldOfStudy: input.fieldOfStudy,
-            startDate: input.startDate,
+            issueDate: input.issueDate,
+            documentHash: input.documentHash || null,
             createdAt: String(new Date()),
             updatedAt: String(new Date()),
           })
@@ -169,6 +170,61 @@ export const appRouter = t.router({
           message: "Failed to save certificate data",
         });
       }
+    }),
+
+    getCertificateByStudentId: protectedProcedure.input(z.object({ studentId: z.string() })).query(async ({ ctx, input }) => {
+      const result = await ctx.db
+        .select()
+        .from(studentCertificate)
+        .where(eq(studentCertificate.studentId, input.studentId))
+        .limit(1);
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      return result[0];
+    }),
+
+    getCertificatesByInstitution: protectedProcedure.input(z.object({ institution: z.string() })).query(async ({ ctx, input }) => {
+      const result = await ctx.db
+        .select()
+        .from(studentCertificate)
+        .where(eq(studentCertificate.institution, input.institution));
+
+      return result;
+    }),
+
+    getCertificatesByStudent: protectedProcedure.input(z.object({ studentId: z.string() })).query(async ({ ctx, input }) => {
+      const result = await ctx.db
+        .select()
+        .from(studentCertificate)
+        .where(eq(studentCertificate.studentId, input.studentId));
+
+      return result;
+    }),
+  }),
+
+  institutions: t.router({
+    getInstitutionStats: protectedProcedure.input(z.object({ institution: z.string() })).query(async ({ ctx, input }) => {
+      const certificateCount = await ctx.db
+        .select({ count: sql`count(*)` })
+        .from(studentCertificate)
+        .where(eq(studentCertificate.institution, input.institution));
+
+      const studentCount = await ctx.db
+        .select({ count: sql`count(*)` })
+        .from(students);
+
+      return {
+        issuedCertificates: certificateCount[0].count,
+        activeStudents: studentCount[0].count,
+      };
+    }),
+
+    getStudents: protectedProcedure.query(async ({ ctx }) => {
+      const result = await ctx.db.select().from(students);
+      return result;
     }),
   }),
 });
