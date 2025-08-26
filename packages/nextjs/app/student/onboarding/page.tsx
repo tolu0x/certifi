@@ -37,8 +37,8 @@ export default function StudentOnboarding() {
     if (!isCheckingUser && userCheckData?.exists && userCheckData.user?.id) {
       router.push("/student/dashboard");
     } else {
-      notification.error("User not found!");
-      router.push("/auth/student");
+      // notification.error("User not found!");
+      // router.push("/auth/student");
     }
   }, [status, router, isCheckingUser, userCheckData]);
 
