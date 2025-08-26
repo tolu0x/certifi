@@ -18,7 +18,6 @@ contract CertifiTest is Test {
         institution = makeAddr("institution");
         student = makeAddr("student");
 
-
         certifi = new Certifi(owner);
 
         // Give the test contract some ETH to work with
@@ -46,25 +45,15 @@ contract CertifiTest is Test {
     }
 
     function testIssueBasicCredential() public {
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.approveInstitution(institution);
 
         vm.prank(institution);
         certifi.issueCredential(documentHash);
 
-        ( 
-            bool isValid,
-            address issuer,
-            uint256 issueDate,
-            bytes32 returnedDocumentHash
-        ) = certifi.verifyCredential(documentHash);
+        (bool isValid, address issuer, uint256 issueDate, bytes32 returnedDocumentHash) =
+            certifi.verifyCredential(documentHash);
 
         assertTrue(isValid);
         assertEq(issuer, institution);
@@ -73,25 +62,13 @@ contract CertifiTest is Test {
     }
 
     function testFailNotApprovedIssueCredential() public {
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.issueCredential(documentHash);
     }
 
     function testRevokeCredential() public {
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.approveInstitution(institution);
 
@@ -107,13 +84,7 @@ contract CertifiTest is Test {
     }
 
     function testFailRevokeCredentialNotIssuer() public {
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.approveInstitution(institution);
         address otherInstitution = makeAddr("otherInstitution");
@@ -127,48 +98,27 @@ contract CertifiTest is Test {
     }
 
     function testVerifyCredentialWithSignature() public {
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.approveInstitution(institution);
         uint256 institutionPrivateKey = 0xA11CE;
         address institutionWithKey = vm.addr(institutionPrivateKey);
         certifi.approveInstitution(institutionWithKey);
 
-        bytes32 messageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash)
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            institutionPrivateKey,
-            messageHash
-        );
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(institutionPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(institutionWithKey);
         certifi.issueCredential(documentHash);
 
-        bool verified = certifi.verifyCredentialWithSignature(
-            documentHash,
-            signature,
-            institutionWithKey
-        );
+        bool verified = certifi.verifyCredentialWithSignature(documentHash, signature, institutionWithKey);
         assertTrue(verified);
     }
 
     function testVerifyWithIncorrectSignature() public {
         // Create a document hash
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         // Approve institution
         certifi.approveInstitution(institution);
@@ -179,43 +129,26 @@ contract CertifiTest is Test {
 
         // Create an incorrect signature
         uint256 wrongPrivateKey = 0xB0B;
-        bytes32 messageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash)
-        );
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongPrivateKey, messageHash);
         bytes memory wrongSignature = abi.encodePacked(r, s, v);
 
         // This should return false rather than revert
-        bool verified = certifi.verifyCredentialWithSignature(
-            documentHash,
-            wrongSignature,
-            institution
-        );
+        bool verified = certifi.verifyCredentialWithSignature(documentHash, wrongSignature, institution);
         assertFalse(verified);
     }
 
     // Test verification with signature for revoked credential
     function testVerifyRevokedCredentialWithSignature() public {
         // Create a document hash
-        bytes32 documentHash = keccak256(
-            abi.encodePacked(
-                "Bachelor of Computer Science",
-                student,
-                block.timestamp
-            )
-        );
+        bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         uint256 institutionPrivateKey = 0xA11CE;
         address institutionWithKey = vm.addr(institutionPrivateKey);
         certifi.approveInstitution(institutionWithKey);
 
-        bytes32 messageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash)
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            institutionPrivateKey,
-            messageHash
-        );
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(institutionPrivateKey, messageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(institutionWithKey);
@@ -224,11 +157,7 @@ contract CertifiTest is Test {
         vm.prank(institutionWithKey);
         certifi.revokeCredential(documentHash);
 
-        bool verified = certifi.verifyCredentialWithSignature(
-            documentHash,
-            signature,
-            institutionWithKey
-        );
+        bool verified = certifi.verifyCredentialWithSignature(documentHash, signature, institutionWithKey);
         assertFalse(verified);
     }
 }

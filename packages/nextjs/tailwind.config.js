@@ -28,7 +28,7 @@ module.exports = {
           ".tooltip": { "--tooltip-tail": "6px" },
           ".link": { textUnderlineOffset: "2px" },
           ".link:hover": { opacity: "80%" },
-          ".btn": { 
+          ".btn": {
             "text-transform": "none",
             "font-weight": "normal",
           },
@@ -56,7 +56,7 @@ module.exports = {
           ".tooltip": { "--tooltip-tail": "6px", "--tooltip-color": "oklch(var(--p))" },
           ".link": { textUnderlineOffset: "2px" },
           ".link:hover": { opacity: "80%" },
-          ".btn": { 
+          ".btn": {
             "text-transform": "none",
             "font-weight": "normal",
           },

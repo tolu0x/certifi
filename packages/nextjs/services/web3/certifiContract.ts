@@ -33,7 +33,7 @@ export const useVerifyCredential = (credentialHash: string | null) => {
   } = useScaffoldReadContract({
     contractName: "Certifi",
     functionName: "verifyCredential",
-    args: credentialHash ? [credentialHash] : undefined,
+    args: [credentialHash as `0x${string}` | undefined],
     // enabled: !!credentialHash,
   });
 
@@ -87,7 +87,11 @@ export const useVerifyCredentialWithSignature = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const verifyWithSignature = async (credentialHash: string, signature: string, issuer: string): Promise<boolean> => {
+  const verifyWithSignature = async (
+    credentialHash: `0x${string}`,
+    signature: `0x${string}`,
+    issuer: string,
+  ): Promise<boolean> => {
     if (!certifiContract) {
       setError("Contract not initialized");
       return false;

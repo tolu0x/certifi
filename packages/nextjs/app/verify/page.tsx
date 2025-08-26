@@ -1,8 +1,8 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { trpc } from "~~/lib/trpc/client";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
+import { trpc } from "~~/lib/trpc/client";
 
 export default function VerifyHashPage() {
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
@@ -46,12 +46,12 @@ export default function VerifyHashPage() {
     setVerificationResult(null);
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = async event => {
       if (event.target?.result) {
         const buffer = event.target.result as ArrayBuffer;
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
         setCalculatedHash(hashHex);
         setDocumentHash(hashHex);
 
@@ -115,7 +115,11 @@ export default function VerifyHashPage() {
               />
             </div>
 
-            <button onClick={handleVerify} className="btn btn-primary" disabled={isVerifying || !certificateFile || !studentId}>
+            <button
+              onClick={handleVerify}
+              className="btn btn-primary"
+              disabled={isVerifying || !certificateFile || !studentId}
+            >
               {isVerifying ? "Verifying..." : "Verify"}
             </button>
           </div>
@@ -139,7 +143,7 @@ export default function VerifyHashPage() {
                 </div> */}
                 <div>
                   <span className="font-medium">Blockchain Match:</span>
-                  <span className={`ml-2 ${verificationResult.blockchainMatch ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`ml-2 ${verificationResult.blockchainMatch ? "text-green-500" : "text-red-500"}`}>
                     {verificationResult.blockchainMatch ? "Verified" : "Not Verified"}
                   </span>
                 </div>

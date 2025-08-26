@@ -49,9 +49,7 @@ export default function CertificatesPage() {
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         filtered = filtered.filter(
-          cert =>
-            cert.degree.toLowerCase().includes(search) ||
-            cert.studentId.toLowerCase().includes(search)
+          cert => cert.degree.toLowerCase().includes(search) || cert.studentId.toLowerCase().includes(search),
         );
       }
 

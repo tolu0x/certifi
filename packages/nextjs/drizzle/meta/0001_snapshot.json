@@ -79,12 +79,8 @@
           "name": "student_cert_student_id_students_id_fk",
           "tableFrom": "student_cert",
           "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["student_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -158,23 +154,17 @@
       "indexes": {
         "students_student_id_unique": {
           "name": "students_student_id_unique",
-          "columns": [
-            "student_id"
-          ],
+          "columns": ["student_id"],
           "isUnique": true
         },
         "students_wallet_address_unique": {
           "name": "students_wallet_address_unique",
-          "columns": [
-            "wallet_address"
-          ],
+          "columns": ["wallet_address"],
           "isUnique": true
         },
         "students_email_unique": {
           "name": "students_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

@@ -5,7 +5,6 @@ import "./DeployHelpers.s.sol";
 import "../contracts/Certifi.sol";
 
 contract DeployCertifi is ScaffoldETHDeploy {
-
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();
         if (deployerPrivateKey == 0) {
@@ -29,5 +28,5 @@ contract DeployCertifi is ScaffoldETHDeploy {
         exportDeployments();
     }
 
-    function test() public {}
+    function test() public { }
 }

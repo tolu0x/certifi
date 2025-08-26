@@ -33,11 +33,11 @@ export default function StudentOnboarding() {
       console.log("Unauthenticated, redirecting to login from onboarding");
       router.push("/auth/student");
     }
-    
+
     if (!isCheckingUser && userCheckData?.exists && userCheckData.user?.id) {
       router.push("/student/dashboard");
     } else {
-      notification.error("User not found!")
+      notification.error("User not found!");
       router.push("/auth/student");
     }
   }, [status, router, isCheckingUser, userCheckData]);

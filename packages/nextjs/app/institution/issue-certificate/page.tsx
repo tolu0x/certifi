@@ -6,13 +6,10 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
+import { sha256 } from "viem";
 import { z } from "zod";
 import { trpc } from "~~/lib/trpc/client";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
-import { sha256 } from "viem";
-
-
-
 
 const studentIdSchema = z.object({
   studentId: z.string().min(9, "Student ID must be 9 characters").max(9, "Student ID must be 9 characters"),
@@ -76,12 +73,12 @@ export default function IssueCertificatePage() {
   useEffect(() => {
     if (certificateFile) {
       const reader = new FileReader();
-      reader.onload = async (event) => {
+      reader.onload = async event => {
         if (event.target?.result) {
           const buffer = event.target.result as ArrayBuffer;
-          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+          const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
           const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
           setDocumentHash(hashHex);
         }
       };
@@ -106,12 +103,10 @@ export default function IssueCertificatePage() {
     return null;
   }
 
-
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
 
   const handleNextStep = () => {
     if (currentStep === 1 && studentData) {
@@ -144,9 +139,7 @@ export default function IssueCertificatePage() {
       const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
 
       // 1. Issue on blockchain
-      const result = await issueCertificate(
-        documentHash,
-      );
+      const result = await issueCertificate(documentHash);
 
       // 2. Issue in DB
       await createCertificate.mutateAsync({
@@ -470,7 +463,6 @@ export default function IssueCertificatePage() {
                           <p>{certificateCourse || formData.certificateCourse}</p>
                         </div>
                       </div>
-
                     </div>
                   )}
                 </div>
@@ -493,9 +485,9 @@ export default function IssueCertificatePage() {
                     <div>
                       <h3 className="font-medium text-blue-800 dark:text-blue-300">Important Information</h3>
                       <p className="mt-1 text-blue-700 dark:text-blue-400 text-sm">
-                        Once issued, this certificate will be uploaded to IPFS for permanent storage and recorded in the database. 
-                        If you upload a certificate file, it will be stored on IPFS along with the certificate metadata. 
-                        The recipient will be notified via email once the certificate is issued.
+                        Once issued, this certificate will be uploaded to IPFS for permanent storage and recorded in the
+                        database. If you upload a certificate file, it will be stored on IPFS along with the certificate
+                        metadata. The recipient will be notified via email once the certificate is issued.
                       </p>
                     </div>
                   </div>

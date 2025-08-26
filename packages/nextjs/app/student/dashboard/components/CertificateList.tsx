@@ -7,7 +7,11 @@ interface CertificateListProps {
 }
 
 export default function CertificateList({ studentId }: CertificateListProps) {
-  const { data: certificates, isLoading, error } = trpc.certificates.getCertificatesByStudent.useQuery({
+  const {
+    data: certificates,
+    isLoading,
+    error,
+  } = trpc.certificates.getCertificatesByStudent.useQuery({
     studentId,
   });
 

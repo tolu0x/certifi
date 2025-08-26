@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
-import { UserRole } from "~~/types/auth";
 import { trpc } from "~~/lib/trpc/client";
+import { UserRole } from "~~/types/auth";
 
 export default function InstitutionDashboard() {
   const router = useRouter();
@@ -54,8 +54,6 @@ export default function InstitutionDashboard() {
 
     handleWeb3SignIn();
   }, [address, session, signMessageAsync]);
-
-  
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -181,7 +179,7 @@ export default function InstitutionDashboard() {
               </div>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold">{Number(statsData?.activeStudents ) || 0}</span>
+              <span className="text-3xl font-bold">{Number(statsData?.activeStudents) || 0}</span>
               <span className="text-gray-500 dark:text-gray-400 text-sm">Total recipients</span>
             </div>
           </div>
