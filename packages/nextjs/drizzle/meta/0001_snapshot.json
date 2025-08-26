@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b77ec208-7509-41ae-80f9-019c60d4e494",
-  "prevId": "27213390-78d7-4151-bb6c-b902f3c057d7",
+  "id": "d0e092e0-e25a-4046-a57d-a40e4aae456a",
+  "prevId": "b507d876-dddd-4c1a-9f74-58bb9868085b",
   "tables": {
     "student_cert": {
       "name": "student_cert",
@@ -42,22 +42,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "start_date": {
-          "name": "start_date",
+        "issue_date": {
+          "name": "issue_date",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "certificate_ipfs_hash": {
-          "name": "certificate_ipfs_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "metadata_ipfs_hash": {
-          "name": "metadata_ipfs_hash",
+        "document_hash": {
+          "name": "document_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -85,96 +78,6 @@
         "student_cert_student_id_students_id_fk": {
           "name": "student_cert_student_id_students_id_fk",
           "tableFrom": "student_cert",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "student_documents": {
-      "name": "student_documents",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "document_type": {
-          "name": "document_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "document_number": {
-          "name": "document_number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "document_url": {
-          "name": "document_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "ipfs_hash": {
-          "name": "ipfs_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "verified": {
-          "name": "verified",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "student_documents_student_id_students_id_fk": {
-          "name": "student_documents_student_id_students_id_fk",
-          "tableFrom": "student_documents",
           "tableTo": "students",
           "columnsFrom": [
             "student_id"
@@ -226,13 +129,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "phone_number": {
-          "name": "phone_number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "profile_image": {

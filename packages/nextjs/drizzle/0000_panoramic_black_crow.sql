@@ -4,20 +4,8 @@ CREATE TABLE `student_cert` (
 	`institution` text NOT NULL,
 	`degree` text NOT NULL,
 	`field_of_study` text NOT NULL,
-	`start_date` text NOT NULL,
-	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE TABLE `student_documents` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`student_id` text NOT NULL,
-	`document_type` text NOT NULL,
-	`document_number` text,
-	`document_url` text NOT NULL,
-	`ipfs_hash` text,
-	`verified` integer DEFAULT false NOT NULL,
+	`issue_date` text NOT NULL,
+	`document_hash` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON UPDATE no action ON DELETE no action

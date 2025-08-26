@@ -8,7 +8,6 @@ export const students = sqliteTable("students", {
   walletAddress: text("wallet_address").unique(),
   email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(),
-  phoneNumber: text("phone_number"),
   profileImage: text("profile_image"),
   createdAt: text("created_at")
     .notNull()
@@ -26,27 +25,8 @@ export const studentCertificate = sqliteTable("student_cert", {
   institution: text("institution").notNull(),
   degree: text("degree").notNull(),
   fieldOfStudy: text("field_of_study").notNull(),
-  startDate: text("start_date").notNull(),
-  certificateIpfsHash: text("certificate_ipfs_hash"),
-  metadataIpfsHash: text("metadata_ipfs_hash"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text("updated_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const studentDocuments = sqliteTable("student_documents", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  studentId: text("student_id")
-    .notNull()
-    .references(() => students.id),
-  documentType: text("document_type").notNull(),
-  documentNumber: text("document_number"),
-  documentUrl: text("document_url").notNull(),
-  ipfsHash: text("ipfs_hash"),
-  verified: integer("verified", { mode: "boolean" }).notNull().default(false),
+  issueDate: text("issue_date").notNull(),
+  documentHash: text("document_hash"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
