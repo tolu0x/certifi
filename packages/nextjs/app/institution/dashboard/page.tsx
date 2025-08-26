@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 import { UserRole } from "~~/types/auth";
+import { trpc } from "~~/lib/trpc/client";
 
 export default function InstitutionDashboard() {
   const router = useRouter();
@@ -13,10 +14,8 @@ export default function InstitutionDashboard() {
   const { address } = useAccount();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
-  const [statsData, setStatsData] = useState({
-    issuedCertificates: 0,
-    pendingApprovals: 0,
-    activeStudents: 0,
+  const { data: statsData, isLoading: isLoadingStats } = trpc.institutions.getInstitutionStats.useQuery({
+    institution: session?.user?.name || "",
   });
 
   useEffect(() => {
@@ -56,13 +55,7 @@ export default function InstitutionDashboard() {
     handleWeb3SignIn();
   }, [address, session, signMessageAsync]);
 
-  useEffect(() => {
-    setStatsData({
-      issuedCertificates: 28,
-      pendingApprovals: 3,
-      activeStudents: 42,
-    });
-  }, []);
+  
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -104,38 +97,6 @@ export default function InstitutionDashboard() {
                   tabIndex={0}
                   className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 border border-gray-200 dark:border-gray-800"
                 >
-                  <li>
-                    <Link href="/institution/profile" className="gap-2">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      Profile
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/institution/settings" className="gap-2">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      Settings
-                    </Link>
-                  </li>
                   <li>
                     <button onClick={handleLogout} className="text-red-600 dark:text-red-400 gap-2">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -200,28 +161,8 @@ export default function InstitutionDashboard() {
               </div>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold">{statsData.issuedCertificates}</span>
+              <span className="text-3xl font-bold">{Number(statsData?.issuedCertificates) || 0}</span>
               <span className="text-green-500 dark:text-green-400 text-sm">+12 this month</span>
-            </div>
-          </div>
-
-          <div className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-gray-500 dark:text-gray-400 font-medium">Pending Approvals</h3>
-              <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold">{statsData.pendingApprovals}</span>
-              <span className="text-gray-500 dark:text-gray-400 text-sm">Need review</span>
             </div>
           </div>
 
@@ -240,7 +181,7 @@ export default function InstitutionDashboard() {
               </div>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold">{statsData.activeStudents}</span>
+              <span className="text-3xl font-bold">{Number(statsData?.activeStudents ) || 0}</span>
               <span className="text-gray-500 dark:text-gray-400 text-sm">Total recipients</span>
             </div>
           </div>

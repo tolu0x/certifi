@@ -10,7 +10,6 @@ import { z } from "zod";
 import { trpc } from "~~/lib/trpc/client";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
 import { sha256 } from "viem";
-// import { uploadToIPFS } from "~~/utils/ipfs";
 
 
 
@@ -141,20 +140,25 @@ export default function IssueCertificatePage() {
 
     try {
       const mockRecipientAddress = `0x${Math.random().toString(36).substring(2, 10)}${"0".repeat(34)}`;
-
       const institutionName = session.user.name || "LASU";
       const institutionAddress = session.user.address || "0x0000000000000000000000000000000000000000";
 
+      // 1. Issue on blockchain
       const result = await issueCertificate(
-        formData,
-        mockRecipientAddress,
-        institutionName,
-        institutionAddress,
         documentHash,
       );
 
-      console.log("Certificate issued successfully:", result);
+      // 2. Issue in DB
+      await createCertificate.mutateAsync({
+        studentId: studentData?.id || formData.recipientId || "",
+        institution: institutionName,
+        degree: formData.certificateTitle,
+        fieldOfStudy: formData.certificateCourse,
+        issueDate: formData.issueDate,
+        documentHash: documentHash || undefined,
+      });
 
+      console.log("Certificate issued successfully:", result);
       router.push("/institution/certificates");
     } catch (error) {
       console.error("Error issuing certificate:", error);

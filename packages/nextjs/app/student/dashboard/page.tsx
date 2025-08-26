@@ -44,7 +44,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        <CertificateList studentAddress={session?.user?.address || ""} />
+        <CertificateList studentId={session?.user?.id || ""} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -54,14 +54,6 @@ export default function StudentDashboard() {
             Update your personal information and notification preferences.
           </p>
           <button className="btn btn-outline w-full">Edit Profile</button>
-        </div>
-
-        <div className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Share with Employers</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Generate special links to share your certificates with potential employers.
-          </p>
-          <button className="btn btn-outline w-full">Create Sharing Link</button>
         </div>
 
         <div className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg">

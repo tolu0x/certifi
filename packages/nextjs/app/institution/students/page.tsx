@@ -4,31 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { trpc } from "~~/lib/trpc/client";
 
 interface Student {
   id: string;
-  name: string;
+  studentId: string | null;
+  walletAddress: string | null;
   email: string;
-  studentId: string;
-  enrollmentDate: string;
-  status: "active" | "inactive";
-  certificates: {
-    total: number;
-    active: number;
-    revoked: number;
-  };
+  fullName: string;
+  profileImage: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function StudentsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { data: students, isLoading } = trpc.institutions.getStudents.useQuery();
 
   useEffect(() => {
     if (status === "unauthenticated" || session?.user?.role !== "institution") {
@@ -43,75 +40,22 @@ export default function StudentsPage() {
   }, [status, session, router]);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockStudents: Student[] = [
-      {
-        id: "stud-001",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        studentId: "STU2024001",
-        enrollmentDate: "2024-01-15",
-        status: "active",
-        certificates: {
-          total: 3,
-          active: 2,
-          revoked: 1,
-        },
-      },
-      {
-        id: "stud-002",
-        name: "Jane Smith",
-        email: "jane.smith@example.com",
-        studentId: "STU2024002",
-        enrollmentDate: "2024-02-01",
-        status: "active",
-        certificates: {
-          total: 2,
-          active: 2,
-          revoked: 0,
-        },
-      },
-      {
-        id: "stud-003",
-        name: "Bob Johnson",
-        email: "bob.johnson@example.com",
-        studentId: "STU2024003",
-        enrollmentDate: "2024-01-20",
-        status: "inactive",
-        certificates: {
-          total: 1,
-          active: 0,
-          revoked: 1,
-        },
-      },
-    ];
-
-    setStudents(mockStudents);
-    setFilteredStudents(mockStudents);
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (students.length > 0) {
+    if (students) {
       let filtered = [...students];
 
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         filtered = filtered.filter(
           student =>
-            student.name.toLowerCase().includes(search) ||
+            student.fullName.toLowerCase().includes(search) ||
             student.email.toLowerCase().includes(search) ||
-            student.studentId.toLowerCase().includes(search),
+            student.studentId?.toLowerCase().includes(search),
         );
-      }
-
-      if (statusFilter !== "all") {
-        filtered = filtered.filter(student => student.status === statusFilter);
       }
 
       setFilteredStudents(filtered);
     }
-  }, [searchTerm, statusFilter, students]);
+  }, [searchTerm, students]);
 
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -123,7 +67,7 @@ export default function StudentsPage() {
     setSelectedStudent(null);
   };
 
-  if (status === "loading") {
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <span className="loading loading-spinner loading-lg"></span>
@@ -184,16 +128,6 @@ export default function StudentsPage() {
                   />
                 </svg>
               </div>
-
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value as any)}
-                className="border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white rounded-md"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
             </div>
           </div>
         </div>
@@ -219,7 +153,7 @@ export default function StudentsPage() {
             </svg>
             <h3 className="mt-4 text-lg font-medium">No students found</h3>
             <p className="mt-1 text-gray-500 dark:text-gray-400">
-              {searchTerm || statusFilter !== "all"
+              {searchTerm
                 ? "Try adjusting your search or filter criteria."
                 : "Start by adding a new student to your records."}
             </p>
@@ -233,8 +167,6 @@ export default function StudentsPage() {
                     <th className="text-left py-3 px-4 font-medium">Student</th>
                     <th className="text-left py-3 px-4 font-medium">Student ID</th>
                     <th className="text-left py-3 px-4 font-medium">Enrollment Date</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Certificates</th>
                     <th className="text-right py-3 px-4 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -243,38 +175,14 @@ export default function StudentsPage() {
                     <tr key={student.id} className="border-t border-gray-200 dark:border-gray-800">
                       <td className="py-4 px-4">
                         <div>
-                          <p className="font-medium">{student.name}</p>
+                          <p className="font-medium">{student.fullName}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
                         </div>
                       </td>
                       <td className="py-4 px-4">
                         <span className="font-mono text-sm">{student.studentId}</span>
                       </td>
-                      <td className="py-4 px-4">{new Date(student.enrollmentDate).toLocaleDateString()}</td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            student.status === "active"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-                          }`}
-                        >
-                          {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{student.certificates.total} total</span>
-                          <span className="text-green-500 dark:text-green-400 text-sm">
-                            {student.certificates.active} active
-                          </span>
-                          {student.certificates.revoked > 0 && (
-                            <span className="text-red-500 dark:text-red-400 text-sm">
-                              {student.certificates.revoked} revoked
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                      <td className="py-4 px-4">{new Date(student.createdAt).toLocaleDateString()}</td>
                       <td className="py-4 px-4 text-right">
                         <div className="flex justify-end gap-2">
                           <button onClick={() => handleViewStudent(student)} className="btn btn-sm btn-outline">
@@ -311,7 +219,7 @@ export default function StudentsPage() {
                   <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-2">
                     <div>
                       <span className="text-sm text-gray-600 dark:text-gray-400">Full Name:</span>
-                      <p>{selectedStudent.name}</p>
+                      <p>{selectedStudent.fullName}</p>
                     </div>
                     <div>
                       <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
@@ -329,45 +237,7 @@ export default function StudentsPage() {
                   <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-2">
                     <div>
                       <span className="text-sm text-gray-600 dark:text-gray-400">Enrollment Date:</span>
-                      <p>{new Date(selectedStudent.enrollmentDate).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
-                      <p>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            selectedStudent.status === "active"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-                          }`}
-                        >
-                          {selectedStudent.status.charAt(0).toUpperCase() + selectedStudent.status.slice(1)}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-medium mb-2">Certificate History</h3>
-                <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold">{selectedStudent.certificates.total}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Certificates</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-500 dark:text-green-400">
-                        {selectedStudent.certificates.active}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Active Certificates</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-red-500 dark:text-red-400">
-                        {selectedStudent.certificates.revoked}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Revoked Certificates</p>
+                      <p>{new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
@@ -378,10 +248,6 @@ export default function StudentsPage() {
                   <button className="btn btn-outline">Edit Student</button>
                   <button className="btn btn-outline">View Certificates</button>
                 </div>
-
-                <button className={`btn ${selectedStudent.status === "active" ? "btn-error" : "btn-success"}`}>
-                  {selectedStudent.status === "active" ? "Deactivate Student" : "Activate Student"}
-                </button>
               </div>
             </div>
           </div>
