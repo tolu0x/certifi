@@ -26,12 +26,6 @@ export type CertificateMetadata = {
   };
 };
 
-export const generateCredentialHash = (data: CertificateData) => {
-  const credentialString = `${data.certificateTitle}:${data.recipientName}:${data.recipientId}:${data.issueDate}`;
-
-  return keccak256(toUtf8Bytes(credentialString));
-};
-
 export const useCertifiIssuer = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -41,43 +35,26 @@ export const useCertifiIssuer = () => {
   });
 
   const issueCertificate = async (
-    certificateData: CertificateData,
-    recipientAddress: string,
-    institutionName: string,
-    institutionAddress: string,
+    // certificateData: CertificateData,
+    // recipientAddress: string,
+    // institutionName: string,
+    // institutionAddress: string,
     documentHash: string | null,
   ) => {
     try {
       setIsUploading(true);
       setUploadError(null);
 
-      const metadata: CertificateMetadata = {
-        title: certificateData.certificateTitle,
-        description: certificateData.certificateCourse,
-        issueDate: certificateData.issueDate,
-        institution: {
-          name: institutionName,
-          address: institutionAddress,
-        },
-        recipient: {
-          name: certificateData.recipientName,
-          email: certificateData.recipientEmail,
-          id: certificateData.recipientId,
-        },
-      };
-
-      const credentialHash = generateCredentialHash(certificateData);
-
       const tx = await issueCredential({
         functionName: "issueCredential",
-        args: [credentialHash, 0, JSON.stringify(metadata), documentHash],
+        args: [documentHash as `0x${string}`],
       });
 
       setIsUploading(false);
 
       return {
         transactionHash: tx,
-        credentialHash,
+        credentialHash: documentHash,
         metadataURI: "",
       };
     } catch (error) {
