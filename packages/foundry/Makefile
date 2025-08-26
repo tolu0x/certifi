@@ -2,6 +2,7 @@
 
 DEPLOY_SCRIPT ?= script/Deploy.s.sol
 RPC_URL ?= http://localhost:8545/
+RPC ?= https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
 ETH_KEYSTORE_ACCOUNT=scaffold-eth-default
 
 

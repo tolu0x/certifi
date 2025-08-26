@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-// [TODO]: Remove when deploying to mainnet
-// import "forge-std/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -27,11 +25,11 @@ contract Certifi {
     mapping(address => bool) public approvedInstitutions;
     
     event CredentialIssued(
-        bytes32 indexed credentialHash, 
+        bytes32 indexed documentHash, 
         address indexed issuer, 
         uint256 issueDate
     );
-    event CredentialRevoked(bytes32 indexed credentialHash, address indexed issuer);
+    event CredentialRevoked(bytes32 indexed documentHash, address indexed issuer);
     event InstitutionApproved(address indexed institution);
     event InstitutionRevoked(address indexed institution);
 
@@ -50,8 +48,8 @@ contract Certifi {
         _;
     }
 
-    modifier onlyCredentialIssuer(bytes32 credentialHash) {
-        require(credentials[credentialHash].issuer == msg.sender, "Not the credential issuer");
+    modifier onlyCredentialIssuer(bytes32 documentHash) {
+        require(credentials[documentHash].issuer == msg.sender, "Not the credential issuer");
         _;
     }
 
@@ -76,13 +74,12 @@ contract Certifi {
 
     /**
      * Issues a new credential with metadata and records it on the blockchain
-     * @param credentialHash The hash of the credential data
+     * @param documentHash The hash of the credential data
      */
     function issueCredential(
-        bytes32 credentialHash, 
         bytes32 documentHash
     ) external onlyApprovedInstitution {
-        require(!credentials[credentialHash].isIssued, "Credential already issued");
+        require(!credentials[documentHash].isIssued, "Credential already issued");
         
         Credential memory newCredential = Credential({
             isIssued: true,
@@ -92,74 +89,52 @@ contract Certifi {
             documentHash: documentHash
         });
         
-        credentials[credentialHash] = newCredential;
+        credentials[documentHash] = newCredential;
         
         emit CredentialIssued(
-            credentialHash, 
+            documentHash, 
             msg.sender, 
             block.timestamp 
         );
     }
 
-    /**
-     * Issues a new credential without additional metadata (backwards compatibility)
-     * @param credentialHash The hash of the credential data
-     */
-    function issueCredential(bytes32 credentialHash) external onlyApprovedInstitution {
-        require(!credentials[credentialHash].isIssued, "Credential already issued");
-        
-        Credential memory newCredential = Credential({
-            isIssued: true,
-            isRevoked: false,
-            issuer: msg.sender,
-            issueDate: block.timestamp,
-            documentHash: bytes32(0)
-        });
-        
-        credentials[credentialHash] = newCredential;
-        
-        emit CredentialIssued(
-            credentialHash, 
-            msg.sender, 
-            block.timestamp
-        );
-    }
+    
 
     /**
      * Revokes a previously issued credential
-     * @param credentialHash The hash of the credential to revoke
+     * @param documentHash The hash of the credential to revoke
      */
-    function revokeCredential(bytes32 credentialHash) 
+    function revokeCredential(bytes32 documentHash) 
         external 
         onlyApprovedInstitution 
-        onlyCredentialIssuer(credentialHash) 
+        onlyCredentialIssuer(documentHash) 
     {
-        require(credentials[credentialHash].isIssued, "Credential not issued");
-        require(!credentials[credentialHash].isRevoked, "Credential already revoked");
+        require(credentials[documentHash].isIssued, "Credential not issued");
+        require(!credentials[documentHash].isRevoked, "Credential already revoked");
         
-        credentials[credentialHash].isRevoked = true;
+        credentials[documentHash].isRevoked = true;
         
-        emit CredentialRevoked(credentialHash, msg.sender);
+        emit CredentialRevoked(documentHash, msg.sender);
     }
 
     /**
      * Verifies a credential based on its hash
-     * @param credentialHash The hash of the credential to verify
+     * @param documentHash The hash of the credential to verify
      * @return isValid True if the credential is valid (issued and not revoked or expired)
      * @return issuer The address of the credential issuer
      * @return issueDate The date when the credential was issued
      */
-    function verifyCredential(bytes32 credentialHash) 
+    function verifyCredential(bytes32 documentHash) 
         external 
         view 
         returns (
             bool isValid, 
             address issuer, 
             uint256 issueDate, 
-            bytes32 documentHash
+            bytes32 returnedDocumentHash
         ) 
     {
-        Credential memory cred = credentials[credentialHash];
+        Credential memory cred = credentials[documentHash];
         
         bool valid = cred.isIssued && 
                    !cred.isRevoked;
@@ -174,11 +149,11 @@ contract Certifi {
 
     /**
      * Simple verification that just checks if a credential is valid
-     * @param credentialHash The hash of the credential to verify
+     * @param documentHash The hash of the credential to verify
      * @return True if the credential is valid, false otherwise
      */
-    function isCredentialValid(bytes32 credentialHash) external view returns (bool) {
-        Credential memory cred = credentials[credentialHash];
+    function isCredentialValid(bytes32 documentHash) external view returns (bool) {
+        Credential memory cred = credentials[documentHash];
         
         return cred.isIssued && 
                !cred.isRevoked;
@@ -186,31 +161,28 @@ contract Certifi {
 
     /**
      * Verifies a credential with a signature
-     * @param credentialHash The hash of the credential data
+     * @param documentHash The hash of the credential data
      * @param signature The signature of the credential hash by the issuer
      * @param issuer The address of the claimed issuer
      * @return True if the credential is valid and the signature matches, false otherwise
      */
     function verifyCredentialWithSignature(
-        bytes32 credentialHash, 
+        bytes32 documentHash, 
         bytes memory signature, 
         address issuer
     ) external view returns (bool) {
-        Credential memory cred = credentials[credentialHash];
+        Credential memory cred = credentials[documentHash];
         
-        // Check if the credential is valid
         if (!cred.isIssued || 
             cred.isRevoked ) {
             return false;
         }
         
-        // Check if the issuer is approved
         if (!approvedInstitutions[issuer]) {
             return false;
         }
         
-        // Verify the signature
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", credentialHash));
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
         address signer = messageHash.recover(signature);
         
         return signer == issuer;
