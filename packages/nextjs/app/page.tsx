@@ -45,15 +45,13 @@ const Home: NextPage = () => {
         </div>
       </section>
 
-      {/* Main Features Section */}
       <section className="py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
             <div>
               <h2 className="text-3xl font-bold mb-8">For Students</h2>
               <p className="text-lg mb-6">
-                Receive, store, and share your academic credentials securely. Never worry about losing your certificates
-                or having to request physical copies again.
+                Control how your academic achievements are verified and shared. Build trust with employers and institutions through blockchain-secured credential verification.
               </p>
 
               <div className="space-y-4 mb-8">
@@ -62,8 +60,8 @@ const Home: NextPage = () => {
                     <ShieldCheckIcon className="h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <h3 className="font-semibold">Secure Storage</h3>
-                    <p>Your credentials are stored securely and accessible anywhere, anytime.</p>
+                    <h3 className="font-semibold">Instant Credibility</h3>
+                    <p>Allow employers and institutions to verify your achievements instantly, eliminating verification delays.</p>
                   </div>
                 </div>
 
@@ -72,18 +70,8 @@ const Home: NextPage = () => {
                     <ShieldCheckIcon className="h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <h3 className="font-semibold">Easy Sharing</h3>
-                    <p>Share your verified credentials with employers or other institutions in seconds.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 mt-1">
-                    <ShieldCheckIcon className="h-6 w-6" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="font-semibold">Tamper-Proof</h3>
-                    <p>Blockchain technology ensures your credentials cannot be altered or falsified.</p>
+                    <h3 className="font-semibold">Fraud Prevention</h3>
+                    <p>Blockchain verification ensures your legitimate credentials stand out from fake certificates.</p>
                   </div>
                 </div>
               </div>
@@ -158,7 +146,7 @@ const Home: NextPage = () => {
                 <p className="text-2xl font-bold">2</p>
               </div>
               <h3 className="text-xl font-semibold mb-4">Students Receive</h3>
-              <p>Students access and manage their digital credentials through a secure online portal.</p>
+              <p>Students receive a link to their digital credentials to share with anyone.</p>
             </div>
             <div className="p-6 border border-gray-200 dark:border-gray-800">
               <div className="w-16 h-16 border-2 border-black dark:border-white rounded-full flex items-center justify-center mx-auto mb-6">
