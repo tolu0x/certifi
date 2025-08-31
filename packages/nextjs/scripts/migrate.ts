@@ -1,5 +1,5 @@
 import { db } from "../lib/db";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { migrate } from "drizzle-orm/libsql/migrator";
 
 migrate(db, { migrationsFolder: "drizzle" });
 

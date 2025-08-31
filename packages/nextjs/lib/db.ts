@@ -1,15 +1,17 @@
 import { config } from "./config";
 import * as schema from "./schema";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 
 let db: ReturnType<typeof drizzle>;
 
 try {
-  const sqlite = new Database(config.database.url);
-  sqlite.pragma("foreign_keys = ON");
+  const client = createClient({
+    url: config.database.url,
+    authToken: config.database.authToken,
+  });
 
-  db = drizzle(sqlite, { schema });
+  db = drizzle(client, { schema });
 
   console.log("Database connected successfully");
 } catch (error) {

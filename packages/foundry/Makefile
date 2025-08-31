@@ -1,9 +1,10 @@
 .PHONY: build deploy generate-abis get-address account chain compile flatten fork format lint test verify
 
 DEPLOY_SCRIPT ?= script/Deploy.s.sol
-RPC_URL ?= http://localhost:8545/
-RPC ?= https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
-ETH_KEYSTORE_ACCOUNT=scaffold-eth-default
+# RPC_URL ?= http://localhost:8545/
+RPC_URL ?= https://arb1.arbitrum.io/rpc
+ETH_KEYSTORE_ACCOUNT=zayn-deployer
+# ETH_KEYSTORE_ACCOUNT=scaffold-eth-default
 
 
 # setup wallet for anvil
@@ -22,7 +23,7 @@ fork: setup-anvil-wallet
 # Deploy the contracts
 deploy:
 	@if [ ! -f "$(DEPLOY_SCRIPT)" ]; then 		echo "Error: Deploy script '$(DEPLOY_SCRIPT)' not found"; 		exit 1; 	fi
-	@if [ "$(RPC_URL)" = "localhost" ]; then 		if [ "$(ETH_KEYSTORE_ACCOUNT)" = "scaffold-eth-default" ]; then 			forge script $(DEPLOY_SCRIPT) --rpc-url localhost --password localhost --broadcast --legacy --ffi; 		else 			forge script $(DEPLOY_SCRIPT) --rpc-url localhost --broadcast --legacy --ffi; 		fi 	else 		forge script $(DEPLOY_SCRIPT) --rpc-url $(RPC_URL) --broadcast --legacy --ffi; 	fi
+	@if [ "$(RPC_URL)" = "localhost" ]; then 		if [ "$(ETH_KEYSTORE_ACCOUNT)" = "scaffold-eth-default" ]; then 			forge script $(DEPLOY_SCRIPT) --rpc-url localhost --password localhost --broadcast --legacy --ffi; 		else 			forge script $(DEPLOY_SCRIPT) --rpc-url localhost --broadcast --legacy --ffi; 		fi 	else 		forge script $(DEPLOY_SCRIPT) --rpc-url $(RPC_URL) --account $(ETH_KEYSTORE_ACCOUNT) --broadcast --legacy --ffi; 	fi
 
 # Deploy and generate ABIs
 deploy-and-generate-abis: deploy generate-abis 

@@ -37,7 +37,6 @@ export default function StudentOnboarding() {
     if (!isCheckingUser && userCheckData?.exists && userCheckData.user?.id) {
       router.push("/student/dashboard");
     } else {
-      // notification.error("User not found!");
       // router.push("/auth/student");
     }
   }, [status, router, isCheckingUser, userCheckData]);
@@ -55,7 +54,7 @@ export default function StudentOnboarding() {
       await createOrUpdate.mutateAsync({
         studentId: formData.studentId,
       });
-      router.refresh();
+      router.push("/student/dashboard");
     } catch (error) {
       notification.error("Error completing profile");
       setIsSubmitting(false);

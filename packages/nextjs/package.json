@@ -21,7 +21,7 @@
   "dependencies": {
     "@heroicons/react": "~2.1.5",
     "@hookform/resolvers": "^5.1.1",
-    "@libsql/client": "^0.15.7",
+    "@libsql/client": "^0.15.14",
     "@rainbow-me/rainbowkit": "2.2.3",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-query": "latest",
@@ -38,6 +38,7 @@
     "blo": "~1.2.0",
     "burner-connector": "0.0.12",
     "daisyui": "4.12.10",
+    "dotenv": "^17.2.1",
     "drizzle-orm": "^0.43.1",
     "ethers": "^6.14.0",
     "ipfs-http-client": "^60.0.1",
