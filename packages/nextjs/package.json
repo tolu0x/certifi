@@ -19,10 +19,13 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@biconomy/abstractjs": "^1.1.0",
     "@heroicons/react": "~2.1.5",
     "@hookform/resolvers": "^5.1.1",
     "@libsql/client": "^0.15.14",
-    "@rainbow-me/rainbowkit": "2.2.3",
+    "@metamask/delegation-toolkit": "^0.11.0",
+    "@privy-io/react-auth": "^2.24.0",
+    "@rainbow-me/rainbowkit": "latest",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-query": "latest",
     "@trpc/client": "^11.3.1",
@@ -36,7 +39,7 @@
     "@zxing/library": "^0.21.3",
     "better-sqlite3": "^11.10.0",
     "blo": "~1.2.0",
-    "burner-connector": "0.0.12",
+    "burner-connector": "latest",
     "daisyui": "4.12.10",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.43.1",
@@ -55,12 +58,13 @@
     "react-hot-toast": "~2.4.0",
     "typescript-eslint": "^8.32.1",
     "usehooks-ts": "~3.1.0",
-    "viem": "2.23.0",
+    "viem": "^2.37.3",
     "wagmi": "2.14.11",
     "zod": "^3.25.63",
     "zustand": "~5.0.0"
   },
   "devDependencies": {
+    "@rhinestone/module-sdk": "^0.3.1",
     "@trivago/prettier-plugin-sort-imports": "~4.3.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "~18.19.50",

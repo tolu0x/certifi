@@ -5,6 +5,7 @@ export interface User {
   role?: UserRole;
   name?: string;
   email?: string;
+  onboardingCompleted?: boolean;
   profileData?: {
     website?: string;
     logoURL?: string;

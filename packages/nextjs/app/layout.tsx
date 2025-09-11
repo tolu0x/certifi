@@ -2,6 +2,7 @@ import "./globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import NextAuthProvider from "~~/components/NextAuthProvider";
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
+import { PrivyProviderWrapper } from "~~/components/PrivyProvider";
 import { ThemeProvider } from "~~/components/ThemeProvider";
 import { TRPCProvider } from "~~/lib/trpc/provider";
 import "~~/styles/globals.css";
@@ -19,7 +20,7 @@ const CertifiApp = ({ children }: { children: React.ReactNode }) => {
         <ThemeProvider enableSystem>
           <TRPCProvider>
             <NextAuthProvider>
-              <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
+              <PrivyProviderWrapper><ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders></PrivyProviderWrapper>
             </NextAuthProvider>
           </TRPCProvider>
         </ThemeProvider>

@@ -3,17 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useAccount, useDisconnect, useSignMessage } from "wagmi";
+import { signOut, useSession } from "next-auth/react";
+import { useAccount, useDisconnect } from "wagmi";
 import { trpc } from "~~/lib/trpc/client";
-import { UserRole } from "~~/types/auth";
 
 export default function InstitutionDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { address } = useAccount();
   const { disconnect } = useDisconnect();
-  const { signMessageAsync } = useSignMessage();
   const { data: statsData, isLoading: isLoadingStats } = trpc.institutions.getInstitutionStats.useQuery({
     institution: session?.user?.name || "",
   });
@@ -22,38 +20,10 @@ export default function InstitutionDashboard() {
     if (status === "unauthenticated") {
       router.push("/auth/institution");
     } else if (session?.user?.role !== "institution") {
+      
       router.push("/auth/institution");
     }
   }, [status, session, router]);
-
-  useEffect(() => {
-    const handleWeb3SignIn = async () => {
-      if (address && !session) {
-        try {
-          const message = `Sign in to Certifi as an institution\n\nAddress: ${address}\n\nNonce: ${Math.random()}`;
-          const signature = await signMessageAsync({ message });
-
-          const result = await signIn("web3", {
-            address,
-            signature,
-            message,
-            role: "institution",
-            redirect: false,
-          });
-
-          if (result?.error) {
-            console.error("Web3 sign in error:", result.error);
-          } else {
-            console.log("Web3 sign in successful");
-          }
-        } catch (error) {
-          console.error("Web3 sign in error:", error);
-        }
-      }
-    };
-
-    handleWeb3SignIn();
-  }, [address, session, signMessageAsync]);
 
   const handleLogout = async () => {
     await signOut({ redirect: false });

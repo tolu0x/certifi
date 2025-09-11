@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthSync } from "~~/hooks/useAuthSync";
 import { useAuthStore } from "~~/services/store/authStore";
+import { usePrivy } from "@privy-io/react-auth";
 
-export default function InstitutionOnboarding() {
+const InstitutionOnboardingPage = () => {
   const router = useRouter();
-  const { user, updateUserProfile } = useAuthStore();
-  const { isWalletConnected } = useAuthSync();
+  const { user, ready, authenticated } = usePrivy();
+  const { user: authUser } = useAuthStore();
+
 
   const [formData, setFormData] = useState({
     name: "",
@@ -19,7 +20,10 @@ export default function InstitutionOnboarding() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!isWalletConnected || !user || user.role !== "institution") {
+  if (!ready || !authenticated || !user) {
+    console.log("ready", ready)
+    console.log("authenticated", authenticated)
+    console.log("user", user)
     router.push("/auth/institution");
     return null;
   }
@@ -34,18 +38,9 @@ export default function InstitutionOnboarding() {
     setIsSubmitting(true);
 
     try {
-      updateUserProfile({
-        name: formData.name,
-        email: formData.contactEmail,
-        profileData: {
-          website: formData.website,
-          contactEmail: formData.contactEmail,
-          institutionType: formData.institutionType,
-          isApproved: true, // TODO: Change to false and write verification logic
-        },
-      });
-
-      // TODO: send this data to backend
+      if (authUser) {
+        authUser.onboardingCompleted = true;
+      }
       router.push("/institution/dashboard");
     } catch (error) {
       console.error("Error submitting institution details:", error);
@@ -140,13 +135,15 @@ export default function InstitutionOnboarding() {
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+            {/* <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
               Your institution will need to be verified before you can issue certificates. This typically takes 1-2
               business days.
-            </p>
+            </p> */}
           </form>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default InstitutionOnboardingPage;
