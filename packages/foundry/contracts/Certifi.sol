@@ -23,8 +23,6 @@ contract Certifi {
 
     mapping(bytes32 => Credential) public credentials;
 
-    mapping(address => bool) public approvedInstitutions;
-
     event CredentialIssued(bytes32 indexed documentHash, address indexed issuer, uint256 issueDate);
     event CredentialRevoked(bytes32 indexed documentHash, address indexed issuer);
     event InstitutionApproved(address indexed institution);
@@ -32,16 +30,10 @@ contract Certifi {
 
     constructor(address _admin) {
         admin = _admin;
-        approvedInstitutions[_admin] = true;
     }
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Not the owner");
-        _;
-    }
-
-    modifier onlyApprovedInstitution() {
-        require(approvedInstitutions[msg.sender], "Not an approved institution");
         _;
     }
 
@@ -51,29 +43,10 @@ contract Certifi {
     }
 
     /**
-     * Approves an institution to issue credentials
-     * @param institution The address of the institution to approve
-     */
-    function approveInstitution(address institution) external onlyAdmin {
-        approvedInstitutions[institution] = true;
-        emit InstitutionApproved(institution);
-    }
-
-    /**
-     * Revokes an institution's approval to issue credentials
-     * @param institution The address of the institution to revoke
-     */
-    function revokeInstitution(address institution) external onlyAdmin {
-        require(institution != admin, "Cannot revoke owner");
-        approvedInstitutions[institution] = false;
-        emit InstitutionRevoked(institution);
-    }
-
-    /**
      * Issues a new credential with metadata and records it on the blockchain
      * @param documentHash The hash of the credential data
      */
-    function issueCredential(bytes32 documentHash) external onlyApprovedInstitution {
+    function issueCredential(bytes32 documentHash) external {
         require(!credentials[documentHash].isIssued, "Credential already issued");
 
         Credential memory newCredential = Credential({
@@ -95,7 +68,6 @@ contract Certifi {
      */
     function revokeCredential(bytes32 documentHash)
         external
-        onlyApprovedInstitution
         onlyCredentialIssuer(documentHash)
     {
         require(credentials[documentHash].isIssued, "Credential not issued");
@@ -151,10 +123,6 @@ contract Certifi {
         Credential memory cred = credentials[documentHash];
 
         if (!cred.isIssued || cred.isRevoked) {
-            return false;
-        }
-
-        if (!approvedInstitutions[issuer]) {
             return false;
         }
 

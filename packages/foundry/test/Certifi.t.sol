@@ -25,29 +25,8 @@ contract CertifiTest is Test {
         vm.deal(institution, 1 ether);
         vm.deal(student, 1 ether);
     }
-
-    function testApproveInstitution() public {
-        certifi.approveInstitution(institution);
-        assertTrue(certifi.approvedInstitutions(institution));
-    }
-
-    function testRevokeInstitution() public {
-        certifi.approveInstitution(institution);
-        assertTrue(certifi.approvedInstitutions(institution));
-
-        certifi.revokeInstitution(institution);
-        assertFalse(certifi.approvedInstitutions(institution));
-    }
-
-    function testFailNotOwnerApproveInstitution() public {
-        vm.prank(institution);
-        certifi.approveInstitution(institution);
-    }
-
     function testIssueBasicCredential() public {
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
-
-        certifi.approveInstitution(institution);
 
         vm.prank(institution);
         certifi.issueCredential(documentHash);
@@ -61,7 +40,7 @@ contract CertifiTest is Test {
         assertEq(returnedDocumentHash, documentHash);
     }
 
-    function testFailNotApprovedIssueCredential() public {
+    function test_RevertIfNotApprovedIssueCredential() public {
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
         certifi.issueCredential(documentHash);
@@ -69,8 +48,6 @@ contract CertifiTest is Test {
 
     function testRevokeCredential() public {
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
-
-        certifi.approveInstitution(institution);
 
         vm.prank(institution);
         certifi.issueCredential(documentHash);
@@ -83,27 +60,24 @@ contract CertifiTest is Test {
         assertFalse(certifi.isCredentialValid(documentHash));
     }
 
-    function testFailRevokeCredentialNotIssuer() public {
+    function test_RevertWhenCredentialNotIssuer() public {
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
-        certifi.approveInstitution(institution);
         address otherInstitution = makeAddr("otherInstitution");
-        certifi.approveInstitution(otherInstitution);
 
         vm.prank(institution);
         certifi.issueCredential(documentHash);
 
         vm.prank(otherInstitution);
+        vm.expectRevert("Not the credential issuer");
         certifi.revokeCredential(documentHash);
     }
 
     function testVerifyCredentialWithSignature() public {
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
 
-        certifi.approveInstitution(institution);
         uint256 institutionPrivateKey = 0xA11CE;
         address institutionWithKey = vm.addr(institutionPrivateKey);
-        certifi.approveInstitution(institutionWithKey);
 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(institutionPrivateKey, messageHash);
@@ -119,9 +93,6 @@ contract CertifiTest is Test {
     function testVerifyWithIncorrectSignature() public {
         // Create a document hash
         bytes32 documentHash = keccak256(abi.encodePacked("Bachelor of Computer Science", student, block.timestamp));
-
-        // Approve institution
-        certifi.approveInstitution(institution);
 
         // Issue credential
         vm.prank(institution);
@@ -145,7 +116,6 @@ contract CertifiTest is Test {
 
         uint256 institutionPrivateKey = 0xA11CE;
         address institutionWithKey = vm.addr(institutionPrivateKey);
-        certifi.approveInstitution(institutionWithKey);
 
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", documentHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(institutionPrivateKey, messageHash);
