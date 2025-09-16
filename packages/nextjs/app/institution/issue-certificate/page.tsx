@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { sha256 } from "viem";
 import { z } from "zod";
 import { trpc } from "~~/lib/trpc/client";
 import { useCertifiIssuer } from "~~/services/web3/certifiIssuer";
@@ -97,11 +96,11 @@ export default function IssueCertificatePage() {
     return null;
   }
 
-  if (!session.user.profileData?.isApproved) {
-    console.log("unauthorized");
-    router.push("/institution/dashboard");
-    return null;
-  }
+  // if (!session.user.profileData?.isApproved) {
+  //   console.log("unauthorized");
+  //   router.push("/institution/dashboard");
+  //   return null;
+  // }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

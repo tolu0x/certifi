@@ -24,7 +24,7 @@ const InstitutionOnboardingPage = () => {
     console.log("ready", ready)
     console.log("authenticated", authenticated)
     console.log("user", user)
-    router.push("/auth/institution");
+    // router.push("/auth/institution");
     return null;
   }
 
@@ -41,6 +41,7 @@ const InstitutionOnboardingPage = () => {
       if (authUser) {
         authUser.onboardingCompleted = true;
       }
+      console.log("going to dash from onboard")
       router.push("/institution/dashboard");
     } catch (error) {
       console.error("Error submitting institution details:", error);

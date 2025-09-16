@@ -1,9 +1,7 @@
 import NextAuth from "next-auth";
 import { DefaultSession, DefaultUser, Session } from "next-auth";
-import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { recoverMessageAddress } from "viem";
 import { UserRole } from "~~/types/auth";
 
 declare module "next-auth" {
@@ -17,6 +15,7 @@ declare module "next-auth" {
       profileData?: {
         isApproved: boolean;
       };
+      privyId?: string;
     } & DefaultSession["user"];
   }
 
@@ -29,6 +28,7 @@ declare module "next-auth" {
     profileData?: {
       isApproved: boolean;
     };
+    privyId?: string;
   }
 }
 
@@ -50,37 +50,24 @@ const handler = NextAuth({
       name: "Web3",
       credentials: {
         address: { label: "Address", type: "text" },
-        signature: { label: "Signature", type: "text" },
-        message: { label: "Message", type: "text" },
         role: { label: "Role", type: "text" },
+        privyId: { label: "Privy ID", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.address || !credentials?.signature || !credentials?.message) {
+        if (!credentials?.address) {
           return null;
         }
 
-        try {
-          const recoveredAddress = await recoverMessageAddress({
-            message: credentials.message,
-            signature: credentials.signature as `0x${string}`,
-          });
-
-          if (recoveredAddress.toLowerCase() === credentials.address.toLowerCase()) {
-            return {
-              id: credentials.address,
-              role: credentials.role as UserRole,
-              address: credentials.address,
-              name: `Institution ${credentials.address.substring(0, 6)}...${credentials.address.substring(credentials.address.length - 4)}`,
-              profileData: {
-                isApproved: true,
-              },
-            };
-          }
-          return null;
-        } catch (error) {
-          console.error("Error verifying signature:", error);
-          return null;
-        }
+        return {
+          id: credentials.address,
+          role: credentials.role as UserRole,
+          address: credentials.address,
+          name: `Institution ${credentials.address.substring(0, 6)}...${credentials.address.substring(credentials.address.length - 4)}`,
+          profileData: {
+            isApproved: true,
+          },
+          privyId: credentials.privyId,
+        };
       },
     }),
   ],
@@ -89,14 +76,15 @@ const handler = NextAuth({
     maxAge: 3 * 24 * 60 * 60, // 3 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role || "student"; // Default to student role for Google OAuth
+        token.role = user.role || "student";
         token.address = user.address;
         token.name = user.name;
         token.image = user.image;
-        token.profileData = user.profileData || { isApproved: true }; // Default to approved for Google OAuth
+        token.profileData = user.profileData || { isApproved: true };
+        token.privyId = user.privyId;
       }
       return token;
     },
@@ -108,6 +96,7 @@ const handler = NextAuth({
         session.user.name = token.name as string;
         session.user.image = token.image as string;
         session.user.profileData = token.profileData as { isApproved: boolean };
+        session.user.privyId = token.privyId as string;
       }
       return session;
     },
