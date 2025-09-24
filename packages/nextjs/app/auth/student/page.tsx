@@ -43,7 +43,7 @@ export default function StudentAuth() {
           <div className="space-y-4">
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-3 btn btn-outline hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full flex items-center justify-center gap-3 btn btn-outline hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

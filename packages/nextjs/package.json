@@ -36,8 +36,6 @@
     "@types/react-joyride": "^2.0.5",
     "@uniswap/sdk-core": "~5.8.2",
     "@uniswap/v2-sdk": "~4.6.1",
-    "@zxing/browser": "^0.1.5",
-    "@zxing/library": "^0.21.3",
     "better-sqlite3": "^11.10.0",
     "blo": "~1.2.0",
     "burner-connector": "latest",
