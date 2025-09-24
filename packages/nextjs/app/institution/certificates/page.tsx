@@ -275,13 +275,13 @@ export default function CertificatesPage() {
                   </div>
                 </div>
               </div>
-
+{/* 
               <div className="flex justify-between">
                 <div className="flex gap-2">
                   <button className="btn btn-outline">Download PDF</button>
                   <button className="btn btn-outline">Share Link</button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

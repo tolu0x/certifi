@@ -37,8 +37,8 @@ const Home: NextPage = () => {
               <Link href="/auth/student" className="btn btn-primary px-8 py-2">
                 Student Login
               </Link>
-              <Link href="/verify" className="btn btn-outline px-8 py-2">
-                Verify a Certificate
+              <Link href="/auth/institution" className="btn btn-outline px-8 py-2">
+                Institution Login
               </Link>
             </div>
           )}
