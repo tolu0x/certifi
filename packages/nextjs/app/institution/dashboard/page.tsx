@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLogout, usePrivy } from "@privy-io/react-auth";
-import { trpc } from "~~/lib/trpc/client";
+import { useAccount } from "wagmi";
+import { useEmbeddedSmartAccountConnector } from './useEmbeddedSmartAccountConnector';
 
 export default function InstitutionDashboard() {
   const { ready, authenticated, user } = usePrivy();
   const { logout } = useLogout();
   const router = useRouter();
+  const { isSmartWalletReady } = useEmbeddedSmartAccountConnector();
   // const { data: session, status } = useSession();
   // const { data: statsData, isLoading: isLoadingStats } = trpc.institutions.getInstitutionStats.useQuery({
   //   institution: session?.user?.name || "",
@@ -21,6 +23,8 @@ export default function InstitutionDashboard() {
     router.push("/auth/institution");
   };
   const userAddress = user?.wallet?.address;
+
+
 
   if (!ready) {
     // Do nothing while the PrivyProvider initializes with updated user state
@@ -35,13 +39,13 @@ export default function InstitutionDashboard() {
   //   return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   // }
 
-  if (ready && authenticated) {
+  if (ready && authenticated && isSmartWalletReady) {
     return (
       <div className="min-h-screen bg-base-100">
         <header className="border-b border-gray-200 dark:border-gray-800">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold">Institution Dashboard</h1>
+              <Link href="/" className="text-2xl font-bold">Home</Link>
 
               <div className="flex items-center gap-6">
                 <div className="hidden md:flex items-center gap-2">
@@ -118,46 +122,8 @@ export default function InstitutionDashboard() {
             </div>
           )} */}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-500 dark:text-gray-400 font-medium">Issued Certificates</h3>
-                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold">{0}</span>
-                <span className="text-green-500 dark:text-green-400 text-sm">+12 this month</span>
-              </div>
-            </div>
-
-            <div className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-500 dark:text-gray-400 font-medium">Active Students</h3>
-                <div className="w-10 h-10 rounded-full bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold">{0}</span>
-                <span className="text-gray-500 dark:text-gray-400 text-sm">Total recipients</span>
-              </div>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold pb-4">Institution Dashboard</h1>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -202,32 +168,6 @@ export default function InstitutionDashboard() {
               </p>
               <div className="text-sm font-medium flex items-center gap-1 text-black dark:text-white">
                 <span>View Certificates</span>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </div>
-            </Link>
-
-            <Link
-              href="/institution/students"
-              className="border border-gray-200 dark:border-gray-800 p-6 rounded-lg hover:border-black dark:hover:border-white transition duration-200"
-            >
-              <div className="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Manage Students</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                View and manage student records and their certificate status.
-              </p>
-              <div className="text-sm font-medium flex items-center gap-1 text-black dark:text-white">
-                <span>Manage Students</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
