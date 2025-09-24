@@ -561,6 +561,284 @@ const deployedContracts = {
       deploymentScript: "Deploy.s.sol",
     },
   },
+  84532: {
+    Certifi: {
+      address: "0xb442253084e1009f094458011d6fe7161ec32ba1",
+      abi: [
+        {
+          type: "constructor",
+          inputs: [
+            {
+              name: "_admin",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "admin",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "credentials",
+          inputs: [
+            {
+              name: "",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          outputs: [
+            {
+              name: "isIssued",
+              type: "bool",
+              internalType: "bool",
+            },
+            {
+              name: "isRevoked",
+              type: "bool",
+              internalType: "bool",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "issueDate",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "isCredentialValid",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "bool",
+              internalType: "bool",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "issueCredential",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "revokeCredential",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "verifyCredential",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          outputs: [
+            {
+              name: "isValid",
+              type: "bool",
+              internalType: "bool",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "issueDate",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "returnedDocumentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "verifyCredentialWithSignature",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+            {
+              name: "signature",
+              type: "bytes",
+              internalType: "bytes",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "bool",
+              internalType: "bool",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "event",
+          name: "CredentialIssued",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              indexed: true,
+              internalType: "bytes32",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "issueDate",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "CredentialRevoked",
+          inputs: [
+            {
+              name: "documentHash",
+              type: "bytes32",
+              indexed: true,
+              internalType: "bytes32",
+            },
+            {
+              name: "issuer",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "InstitutionApproved",
+          inputs: [
+            {
+              name: "institution",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "InstitutionRevoked",
+          inputs: [
+            {
+              name: "institution",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "error",
+          name: "ECDSAInvalidSignature",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "ECDSAInvalidSignatureLength",
+          inputs: [
+            {
+              name: "length",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "ECDSAInvalidSignatureS",
+          inputs: [
+            {
+              name: "s",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+        },
+      ],
+      inheritedFunctions: {},
+      deploymentFile: "run-1758695720.json",
+      deploymentScript: "Deploy.s.sol",
+    },
+  },
 } as const;
 
 export default deployedContracts satisfies GenericContractsDeclaration;

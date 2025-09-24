@@ -55,7 +55,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       // Get full transaction from public client
       const publicClient = getPublicClient(wagmiConfig);
 
-      notificationId = notification.loading(<TxnNotification message="Awaiting for user confirmation" />);
+
       if (typeof tx === "function") {
         // Tx is already prepared by the caller
         const result = await tx();
@@ -65,7 +65,6 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       } else {
         throw new Error("Incorrect transaction passed to transactor");
       }
-      notification.remove(notificationId);
 
       blockExplorerTxURL = network ? getBlockExplorerTxLink(network, transactionHash) : "";
 

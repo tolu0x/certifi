@@ -2,7 +2,7 @@
 
 DEPLOY_SCRIPT ?= script/Deploy.s.sol
 # RPC_URL ?= http://localhost:8545/
-RPC_URL ?= https://arb1.arbitrum.io/rpc
+RPC_URL ?= https://sepolia.base.org
 ETH_KEYSTORE_ACCOUNT=zayn-deployer
 # ETH_KEYSTORE_ACCOUNT=scaffold-eth-default
 
