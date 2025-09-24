@@ -2,7 +2,6 @@
 
 import { ChangeEvent, useState } from "react";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
-import { trpc } from "~~/lib/trpc/client";
 
 export default function VerifyHashPage() {
   const [certificateFile, setCertificateFile] = useState<File | null>(null);

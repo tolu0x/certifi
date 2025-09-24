@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import CertificateList from "./components/CertificateList";
 import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -61,9 +62,9 @@ export default function StudentDashboard() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Verify the authenticity of certificates from other institutions.
           </p>
-          <a href="/verify" className="btn btn-outline w-full">
+          <Link href="/verify" className="btn btn-outline w-full">
             Verify Certificate
-          </a>
+          </Link>
         </div>
       </div>
     </div>
